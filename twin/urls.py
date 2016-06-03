@@ -2,7 +2,8 @@ from django.conf.urls import url, include
 from rest_framework import routers
 from django.conf.urls.static import static
 from django.views.static import serve
-from twin import views
+from twin import views, avans
+
 
 router = routers.DefaultRouter()
 #router.register(r'users', views.UserViewSet)
@@ -11,8 +12,6 @@ router = routers.DefaultRouter()
 # Additionally, we include login URLs for the browsable API.
 urlpatterns = [
     url(r'^$', views.home),
-    url(r'^oauth/callback$', views.avans_callback, name='home'),
-    #url(r'^$', serve, kwargs={'path': 'index.html', 'document_root': 'public'}),
-    #url(r'^', include(router.urls)),
-    #url(r'^api/', include('rest_framework.urls', namespace='rest_framework'))
+    #url(r'^api/user$', views.user),
+    url(r'^oauth/callback$', avans.callback),
 ] + static('/', document_root='public')

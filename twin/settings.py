@@ -38,6 +38,8 @@ INSTALLED_APPS = [
 
 AUTH_USER_MODEL = 'twin.User'
 
+AUTHENTICATION_BACKENDS = ('twin.models.UserBackend',)
+
 MIDDLEWARE_CLASSES = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
