@@ -23,18 +23,24 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+LOGIN_URL = '/'
 
 # Application definition
 
 INSTALLED_APPS = [
     'django.contrib.admin',
+    'django.contrib.staticfiles',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'rest_framework',
-    'twin'
+    'twin',
+    'import_export',
 ]
+
+STATIC_URL = '/public/'
+STATIC_ROOT = 'public'
 
 AUTH_USER_MODEL = 'twin.User'
 
@@ -90,7 +96,7 @@ DATABASES = {
 # Internationalization
 # https://docs.djangoproject.com/en/1.9/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'nl-nl'
 
 TIME_ZONE = 'UTC'
 

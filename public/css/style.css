@@ -1,0 +1,53 @@
+* {
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  padding: 0;
+  margin: 0;
+  font-family: 'Roboto', sans-serif;
+}
+
+
+header {
+  background-color: #f44336;
+  margin-bottom: 40pt;
+}
+
+
+h1 {
+  color: white;
+  text-align: center;
+  padding: 10px;
+
+}
+
+.user {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  color: white;
+  font-size: 10pt;
+}
+
+.logout {
+  opacity: 0.6;
+  font-size: 0.8em;
+
+}
+
+.logout a {
+  color: white;
+  text-decoration: none;
+}
+
+article {
+  text-align: center;
+}
+
+input#student {
+  font-size: 30px;
+  padding: 8px;
+  margin: 5pt;
+}
