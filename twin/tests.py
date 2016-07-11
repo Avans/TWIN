@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from django.test import TestCase, Client
-from .models import Student, User, Preference
+from .models import Student, Term, User, Preference
 import json
 
 client = Client()
@@ -11,16 +11,29 @@ Tests the /api/students list that should return a list of all the students
 """
 class ApiStudentsTest(TestCase):
     def setUp(self):
-        self.paul = Student.objects.create(student_number=1, email='paul@avans.nl', name='Paul Wagener')
-        self.reinier = Student.objects.create(student_number=2, email='reinier@avans.nl', name='Reinier Dickhout')
-        self.bob = Student.objects.create(student_number=3, email='bob@avans.nl', name='Bob van der Putten')
+        """
+        Set up a test scenario with two terms, one that contains the first three students
+        and the other containing the fourth one.
+
+        """
+        self.term1 = Term.objects.create(year=2016, quarter=1)
+        self.term2 = Term.objects.create(year=2016, quarter=2)
+
+        self.paul = Student.objects.create(student_number=1, email='paul@avans.nl', name='Paul Wagener', term=self.term1)
+        self.reinier = Student.objects.create(student_number=2, email='reinier@avans.nl', name='Reinier Dickhout', term=self.term1)
+        self.bob = Student.objects.create(student_number=3, email='bob@avans.nl', name=u'Bõb van der PUTTEN', term=self.term1) # test unicode
+        self.andre = Student.objects.create(student_number=4, email='andre@avans.nl', name=u'André Gehring', term=self.term2)
 
         self.user = User.objects.create_user(username='pwagener', is_student=True, student=self.paul)
         client.login(username=self.user.username)
 
+        """
+        The result should be the other two students from our term
+        Paul is excluded because that is the logged in user
+        and Andre is excluded because he is in another term
+        """
         self.expected = [
-            {u'email': u'bob@avans.nl', u'name': u'Bob van der Putten'},
-            {u'email': u'paul@avans.nl', u'name': u'Paul Wagener'},
+            {u'email': u'bob@avans.nl', u'name': u'Bõb van der PUTTEN'},
             {u'email': u'reinier@avans.nl', u'name': u'Reinier Dickhout'},
         ]
 
@@ -66,7 +79,40 @@ class ApiStudentsTest(TestCase):
         Preference.objects.create(student=self.bob, preference_for=self.paul)
         Preference.objects.create(student=self.reinier, preference_for=self.paul)
         self.expected[0]['reciprocal'] = True
-        self.expected[2]['reciprocal'] = True
+        self.expected[1]['reciprocal'] = True
 
         response = client.get('/api/students')
         self.assertEqual(self.expected, response.json())
+
+    def test_teacher(self):
+        admin = User.objects.create_user(username='admin', is_student=False)
+        client.login(username=admin.username)
+
+        # Undefined behaviour, but it shouldn't crash
+        client.get('/api/students')
+
+class ApiUserTest(TestCase):
+    def setUp(self):
+
+        student = Student.objects.create(student_number=1, email='paul@avans.nl', name=u'Paul Wagener', term=Term.objects.create(year=2016, quarter=1))
+
+        self.user_student = User.objects.create_user(username='pwagener', is_student=True, student=student)
+
+        self.user_teacher = User.objects.create_user(username='agehring', is_student=False)
+
+    def test_student(self):
+        client.login(username=self.user_student.username)
+
+        expected = {"username": "pwagener", "student": {'email': 'paul@avans.nl', 'name': 'Paul Wagener'}}
+
+        response = client.get('/api/user')
+        self.assertEqual(expected, response.json())
+
+    def test_teacher(self):
+        client.login(username=self.user_teacher.username)
+
+        expected = {"username": "agehring"}
+
+        response = client.get('/api/user')
+        self.assertEqual(expected, response.json())
+

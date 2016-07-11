@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
-
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+import datetime
 
 """
 UserBackend and UserManager are necessary classes to nicely integrate our
@@ -71,6 +71,7 @@ class Student(models.Model):
     student_number = models.IntegerField(primary_key=True, verbose_name="Studentnummer")
     email = models.EmailField(db_index=True, verbose_name="E-mail")
     name = models.CharField(max_length=200, verbose_name="Volledige naam")
+    term = models.ForeignKey('Term', verbose_name="Volgend blok")
 
     def __str__(self):
         return self.name
@@ -106,12 +107,14 @@ class Preference(models.Model):
 """
 A term (dutch: Blok) is a quarter part of a curriculum for a specific year
 """
-""" TODO: Have a better understanding of how students should be matched to terms
 class Term(models.Model):
-    year = models.IntegerField()
-    quarter = models.IntegerField()
+    year = models.IntegerField(verbose_name='Schooljaar', default=datetime.date.today().year,choices=[(year, '{0}-{1}'.format(year, year+1)) for year in range(datetime.date.today().year-10, datetime.date.today().year+10)])
+    quarter = models.IntegerField(choices=[(1, 'Periode 1'), (2, 'Periode 2'), (3, 'Periode 3'), (4, 'Periode 4')], verbose_name='Periode')
     major = models.CharField(max_length=10)
 
-    start_date = models.DateField()
-    end_date = models.DateField()
-"""
+    def __unicode__(self):
+        return u'{0}{1} ({2}-{3})'.format(self.major, self.quarter, self.year, self.year+1)
+
+    class Meta:
+        verbose_name = "Blok"
+        verbose_name_plural = "Blokken"

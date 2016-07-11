@@ -25,8 +25,8 @@ def api_user(request):
 
     if request.user.student <> None:
             user['student'] = {
-                'student_number': request.user.student.student_number,
-                'name': request.user.student.first_name + ' ' + request.user.student.last_name
+                'email': request.user.student.email,
+                'name': request.user.student.name
             }
     return HttpResponse(json.dumps(user), content_type='application/json')
 
@@ -44,7 +44,6 @@ def api_preference(request):
         preference.save()
         return HttpResponse(json.dumps(None), content_type='application/json')
     else:
-        print request.user.student
         if request.user.student == None:
             return HttpResponse(json.dumps(None), content_type='application/json')
 
@@ -66,13 +65,17 @@ Returns a list of students that the logged in student can
 """
 @login_required
 def api_students(request):
-    student_number = request.user.student.student_number
+    if request.user.student:
+        student_number = request.user.student.student_number
+        term_id = request.user.student.term.id
 
-    students = Student.objects.raw('SELECT student_number, name, email, EXISTS(SELECT 1 FROM twin_preference WHERE student_id=student_number AND preference_for_id=%s) AS reciprocal FROM twin_student ORDER BY name', [student_number])
+        students = Student.objects.raw('SELECT student_number, name, email, EXISTS(SELECT 1 FROM twin_preference WHERE student_id=student_number AND preference_for_id=%s) AS reciprocal FROM twin_student WHERE term_id=%s AND student_number<>%s ORDER BY name', [student_number, term_id, student_number])
+    else:
+        students = Student.objects.all()
 
     def make_json(student):
         data = {'name': student.name, 'email': student.email}
-        if student.reciprocal:
+        if hasattr(student, 'reciprocal') and student.reciprocal:
             data['reciprocal'] = True
         return data
 
@@ -80,13 +83,15 @@ def api_students(request):
 
     return HttpResponse(json.dumps(students), content_type='application/json')
 
-def debug_quickswitch(request, student_id):
+import random
+def debug_quickswitch(request, email):
+    student = Student.objects.get(email=email)
     try:
-        user = User.objects.get(student_id=student_id)
+        user = User.objects.get(student=student)
     except:
         user = User()
-        user.username = student_id
-        user.student_id = student_id
+        user.username = email
+        user.student = student
         user.is_student = True
         user.save()
 

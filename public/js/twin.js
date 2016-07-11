@@ -64,10 +64,11 @@ app.controller('TwinController', function($scope, $http, $timeout) {
 
 
     /* DEBUG!!! */
-    $scope.$watch('debug_user', function(student_id) {
-        if(student_id) {
-            window.location.replace("/debug/quickswitch/" + student_id);
+    $scope.$watch('debug_user', function(student) {
+        if(student) {
+            window.location.replace("/debug/quickswitch/" + student.email);
         }
-    })
+    });
+    /* END DEBUG!!! */
 
 })
