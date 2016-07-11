@@ -61,9 +61,22 @@ def api_preference(request):
 
         return HttpResponse(json.dumps(preference_for), content_type='application/json')
 
+"""
+Returns a list of students that the logged in student can
+"""
 @login_required
 def api_students(request):
-    students = [{'name': student.first_name + ' ' + student.last_name, 'student_number': student.student_number} for student in Student.objects.all()]
+    student_number = request.user.student.student_number
+
+    students = Student.objects.raw('SELECT student_number, name, email, EXISTS(SELECT 1 FROM twin_preference WHERE student_id=student_number AND preference_for_id=%s) AS reciprocal FROM twin_student ORDER BY name', [student_number])
+
+    def make_json(student):
+        data = {'name': student.name, 'email': student.email}
+        if student.reciprocal:
+            data['reciprocal'] = True
+        return data
+
+    students = [make_json(student) for student in students]
 
     return HttpResponse(json.dumps(students), content_type='application/json')
 
