@@ -14,7 +14,7 @@ app.controller('TwinController', function($scope, $http, $timeout) {
         $scope.user = response.data;
     });
 
-    // Get the user information
+    // Get the user preference information
     $http.get('/api/preference').then(function(response) {
         $scope.preference = response.data;
     });
@@ -36,7 +36,17 @@ app.controller('TwinController', function($scope, $http, $timeout) {
                         $scope.changePreference(ui.item.student);
                     })
                 }
-            }).on('input change', function(e) {
+            }).data("ui-autocomplete")._renderItem = function( ul, item ) {
+                var li = $("<li>");
+                if(item.student.reciprocal) {
+                    li.addClass('reciprocal');
+                }
+                li.append( item.label )
+                    .appendTo( ul );
+                return li;
+            }
+
+            $('#student').on('input change', function(e) {
                 if($(this).val() === '') {
                     $timeout(function() {
                         $scope.changePreference(null);

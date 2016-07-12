@@ -26,7 +26,8 @@ def api_user(request):
     if request.user.student <> None:
             user['student'] = {
                 'email': request.user.student.email,
-                'name': request.user.student.name
+                'name': request.user.student.name,
+                'term': str(request.user.student.term)
             }
     return HttpResponse(json.dumps(user), content_type='application/json')
 

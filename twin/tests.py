@@ -97,7 +97,7 @@ Tests the /api/user url, should return information about the current logged in u
 class ApiUserTest(TestCase):
     def setUp(self):
 
-        student = Student.objects.create(student_number=1, email='paul@avans.nl', name=u'Paul Wagener', term=Term.objects.create(year=2016, quarter=1))
+        student = Student.objects.create(student_number=1, email='paul@avans.nl', name=u'Paul Wagener', term=Term.objects.create(year=2016, quarter=1, major='SO'))
 
         self.user_student = User.objects.create_user(username='pwagener', is_student=True, student=student)
 
@@ -106,7 +106,7 @@ class ApiUserTest(TestCase):
     def test_student(self):
         client.login(username=self.user_student.username)
 
-        expected = {"username": "pwagener", "student": {'email': 'paul@avans.nl', 'name': 'Paul Wagener'}}
+        expected = {"username": "pwagener", "student": {'email': 'paul@avans.nl', 'name': 'Paul Wagener', 'term': 'SO1 (2016-2017)'}}
 
         response = client.get('/api/user')
         self.assertEqual(expected, response.json())
