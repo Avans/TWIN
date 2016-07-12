@@ -82,6 +82,7 @@ class Student(models.Model):
     class Meta:
         verbose_name = "Student"
         verbose_name_plural = "Studenten"
+        ordering = ["name"]
 
 """
 A twin is a match between two students who want to be in the same group next year.
@@ -102,7 +103,15 @@ A student can choose anyone as a preference, but is only twinned when the prefer
 """
 class Preference(models.Model):
     student = models.ForeignKey('Student')
-    preference_for = models.ForeignKey('Student', related_name='preference_for')
+    preference_for = models.ForeignKey('Student', related_name='preference_for', verbose_name='Heeft voorkeur voor')
+
+    def __str__(self):
+        return str(self.student) + ' heeft voorkeur voor ' + str(self.preference_for)
+
+    class Meta:
+        verbose_name = "Voorkeur"
+        verbose_name_plural = "Voorkeuren"
+        ordering = ["student"]
 
 """
 A term (dutch: Blok) is a quarter part of a curriculum for a specific year

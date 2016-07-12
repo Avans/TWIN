@@ -91,6 +91,9 @@ class ApiStudentsTest(TestCase):
         # Undefined behaviour, but it shouldn't crash
         client.get('/api/students')
 
+"""
+Tests the /api/user url, should return information about the current logged in user
+"""
 class ApiUserTest(TestCase):
     def setUp(self):
 
@@ -115,4 +118,89 @@ class ApiUserTest(TestCase):
 
         response = client.get('/api/user')
         self.assertEqual(expected, response.json())
+
+"""
+Tests the /api/preference url
+Should return information about the current preference and be able to POST new preference information
+"""
+class ApiPreferenceTest(TestCase):
+    def setUp(self):
+        term = Term.objects.create(year=2016, quarter=1)
+
+        self.paul = Student.objects.create(student_number=1, email='paul@avans.nl', name=u'Paul Wagener', term=term)
+        self.bart = Student.objects.create(student_number=2, email='bart@avans.nl', name=u'Bart Gelens', term=term)
+        self.stijn = Student.objects.create(student_number=3, email='stijn@avans.nl', name=u'Stijn Smulders', term=term)
+        self.user = User.objects.create_user(username='pwagener', is_student=True, student=self.paul)
+
+        client.login(username=self.user.username)
+
+    def test_no_preference(self):
+        response = client.get('/api/preference')
+        self.assertEqual(None, response.json())
+
+    def test_has_preference(self):
+        Preference.objects.create(student=self.paul, preference_for=self.bart)
+
+        expected = {
+            'email': 'bart@avans.nl',
+            'name': 'Bart Gelens'
+        }
+
+        response = client.get('/api/preference')
+        self.assertEqual(expected, response.json())
+
+    def test_has_reciprocal_preference(self):
+        Preference.objects.create(student=self.bart, preference_for=self.paul)
+        Preference.objects.create(student=self.paul, preference_for=self.bart)
+
+        expected = {
+            'email': 'bart@avans.nl',
+            'name': 'Bart Gelens',
+            'reciprocal': True
+        }
+
+        response = client.get('/api/preference')
+        self.assertEqual(expected, response.json())
+
+    def test_teacher(self):
+        teacher = User.objects.create(username='teacher', is_student=False)
+        client.login(username=teacher.username)
+
+        # Undefined behaviour, but shouldn't crash
+        client.get('/api/preference')
+
+    def test_post_preference(self):
+        response = client.post('/api/preference', json.dumps({'email': 'bart@avans.nl'}), content_type='application/json')
+
+        self.assertTrue(Preference.objects.filter(student=self.paul, preference_for=self.bart).exists())
+
+        # Check that the POST response behaves like a GET
+        expected = {
+            'email': 'bart@avans.nl',
+            'name': 'Bart Gelens'
+        }
+        self.assertEqual(expected, response.json())
+
+    def test_post_overrides_previous_preference(self):
+        Preference.objects.create(student=self.paul, preference_for=self.stijn)
+
+        client.post('/api/preference', json.dumps({'email': 'bart@avans.nl'}), content_type='application/json')
+
+        self.assertEquals(1, Preference.objects.all().count())
+        self.assertTrue(Preference.objects.filter(student=self.paul, preference_for=self.bart).exists())
+
+    def test_post_remove_previous_preference(self):
+        Preference.objects.create(student=self.paul, preference_for=self.bart)
+
+        client.post('/api/preference', json.dumps(None), content_type='application/json')
+
+        self.assertEquals(0, Preference.objects.all().count())
+
+    def test_post_no_self_preference(self):
+        client.post('/api/preference', json.dumps({'email': 'paul@avans.nl'}), content_type='application/json')
+
+        self.assertEquals(0, Preference.objects.all().count())
+
+
+
 

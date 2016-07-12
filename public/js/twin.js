@@ -54,10 +54,12 @@ app.controller('TwinController', function($scope, $http, $timeout) {
             if(student === null) {
                 var post = 'null';
             } else {
-                var post = {student_number: student.student_number};
+                var post = {email: student.email};
             }
             $http.post('/api/preference', post).then(function(response) {
-                console.log('response:', response);
+                if(response.data) {
+                    angular.copy(response.data, $scope.preference);
+                }
             });
         }
     }

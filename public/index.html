@@ -21,7 +21,7 @@
 
       <!-- DEBUG -->
       <div style="color: white; position: absolute">
-      <select ng-model="debug_user" ng-options="student as student.name for student in students track by student.student_number"></select>
+      <select ng-model="debug_user" ng-options="student.name for student in students track by student.email"></select>
       </div>
       <!-- END DEBUG -->
 

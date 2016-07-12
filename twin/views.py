@@ -30,35 +30,64 @@ def api_user(request):
             }
     return HttpResponse(json.dumps(user), content_type='application/json')
 
+"""
+GET:  Returns which other student the (student)user has as preference.
+      It does so with the following JSON:
+      {
+         'email': <email address>
+         'name': <full name>
+         'reciprocal': True (only if that other student has you as a preference)
+      }
+      or `null` if the student has no preference
+
+POST: Allows a student to set a new preference, the request body has to have the following format:
+      {
+          'email': <email address>
+      }
+      or `null`
+      It returns the new preference as described in GET in the response
+"""
 @login_required
 @csrf_exempt
 def api_preference(request):
-
-    if request.method == 'POST':
-        # Save a new preference
-        student_number = json.loads(request.body)['student_number']
-
-        preference = Preference()
-        preference.student = request.user.student
-        preference.preference_for_id = student_number#Student.objects.get(student_number=student_number)
-        preference.save()
+    # For teachers this API has undefined behaviour, simply return null
+    if not request.user.student:
         return HttpResponse(json.dumps(None), content_type='application/json')
-    else:
-        if request.user.student == None:
-            return HttpResponse(json.dumps(None), content_type='application/json')
 
-        try:
-            preference_for = Preference.objects.get(student=request.user.student)
-        except Preference.DoesNotExist:
-            print 'doesnotexist'
-            return HttpResponse(json.dumps(None), content_type='application/json')
+    # Save the preference
+    if request.method == 'POST':
+        # Remove any previous preference
+        Preference.objects.filter(student=request.user.student).delete()
 
-        preference_for = {
-            'student_number': preference_for.student_number,
-            'name': preference_for.first_name + ' ' + preference_for.last_name
-        }
+        content = json.loads(request.body)
 
-        return HttpResponse(json.dumps(preference_for), content_type='application/json')
+        if isinstance(content, dict) and 'email' in content:
+            email = content['email']
+
+            if email <> request.user.student.email:
+                preference = Preference()
+                preference.student = request.user.student
+                preference.preference_for = Student.objects.get(email=email)
+                preference.save()
+
+    # Find the preference
+    try:
+        preference = Preference.objects.get(student=request.user.student)
+    except Preference.DoesNotExist:
+        return HttpResponse(json.dumps(None), content_type='application/json')
+
+    # Output to user
+    preference_json = {
+        'email': preference.preference_for.email,
+        'name': preference.preference_for.name
+    }
+
+    if Preference.objects.filter(student=preference.preference_for, preference_for=request.user.student):
+        preference_json['reciprocal'] = True
+
+    return HttpResponse(json.dumps(preference_json), content_type='application/json')
+
+
 
 """
 Returns a list of students that the logged in student can
@@ -71,7 +100,7 @@ def api_students(request):
 
         students = Student.objects.raw('SELECT student_number, name, email, EXISTS(SELECT 1 FROM twin_preference WHERE student_id=student_number AND preference_for_id=%s) AS reciprocal FROM twin_student WHERE term_id=%s AND student_number<>%s ORDER BY name', [student_number, term_id, student_number])
     else:
-        students = Student.objects.all()
+        students = Student.objects.all().order_by('name')
 
     def make_json(student):
         data = {'name': student.name, 'email': student.email}
