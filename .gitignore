@@ -1,4 +1,5 @@
 /db.sqlite3
 /twin/secrets.py
+/google_credentials.json
 *.pyc
 .vscode

@@ -62,7 +62,7 @@ ROOT_URLCONF = 'twin.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR + '/templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -77,6 +77,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'twin.wsgi.application'
 
+# Folder that contains the student list sheets
+DRIVE_FOLDER = '0B7M39NIqrzwhYzM5Y2U3NTgtOWUzNy00ODM1LWE2MjAtMDNlMmMyMGUyOTVi'
 
 # Database
 # https://docs.djangoproject.com/en/1.9/ref/settings/#databases

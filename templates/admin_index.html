@@ -1,0 +1,15 @@
+{% extends "admin/index.html" %}
+
+{% block sidebar %}
+{{ block.super }}
+<style>
+.twin-extra {
+  margin-top: 0;
+  float: none;
+}
+</style>
+<ul class="object-tools twin-extra" >
+  <li><a href="/admin/twin/student/import" class="link">Studenten importeren</a></li>
+  <li><a href="/admin/twin/groups" class="link">Groepen maken</a></li>
+</ul>
+{% endblock %}

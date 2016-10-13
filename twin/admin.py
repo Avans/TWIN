@@ -1,42 +1,44 @@
 from django.contrib.admin import AdminSite, ModelAdmin
-from import_export import resources
-from import_export.admin import ImportExportModelAdmin
-from import_export.fields import Field
-from import_export.widgets import Widget
+from django.conf.urls import url
+from django.http import HttpResponse
+from django.shortcuts import render
 from .models import Student, Term, Preference
+import settings
+
+# Load the Google API's
+import httplib2
+from apiclient import discovery
+from oauth2client.file import Storage
+
+http = Storage(settings.BASE_DIR + '/google_credentials.json').get().authorize(httplib2.Http())
+drive = discovery.build('drive', 'v3', http=http)
+sheets = discovery.build('sheets', 'v4', http=http)
+
+def student_import(request):
+    sheet_files = drive.files().list(
+        q="'{0}' in parents and mimeType = 'application/vnd.google-apps.spreadsheet'".format(settings.DRIVE_FOLDER),
+        fields="files(id, name, webViewLink)",
+        orderBy="name"
+        ).execute()['files']
+
+    return render(request, 'student_import_choose_sheet.html', {'sheets': sheet_files})
 
 class TwinAdminSite(AdminSite):
     site_header = 'TWIN administratie'
+    index_template = 'admin_index.html'
 
-class TermWidget(Widget):
-    def clean(self, value):
-        terms = Term.objects.all()
-        try:
-            return [term for term in terms if str(term) == value][0]
-        except:
-            raise ValueError("\n\nBlok '{0}' bestaat niet. Kies uit: {1}".format(value, ', '.join(["'{0}'".format(term) for term in terms])))
+    def get_urls(self):
+        urls = [
+            url(r'^twin/student/import$', student_import),
+            url(r'^twin/groups$', student_import)
+        ]
 
-    def render(self, value):
-        return str(value)
+        return AdminSite.get_urls(self) + urls
 
-class StudentResource(resources.ModelResource):
-    studentnummer = Field(attribute='student_number')
-    naam = Field(attribute='name')
-    blok = Field(attribute='term', widget=TermWidget())
-
-    class Meta:
-        model = Student
-        import_id_fields = ('studentnummer',)
-        fields = ('studentnummer','email', 'naam', 'blok')
-        export_order = fields
-
-
-class StudentAdmin(ImportExportModelAdmin):
-    resource_class = StudentResource
-
-
+class Admin(ModelAdmin):
+    pass
 
 site = TwinAdminSite(name='admin')
-site.register(Student, StudentAdmin)
+site.register(Student)
 site.register(Preference)
 site.register(Term)
