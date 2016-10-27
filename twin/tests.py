@@ -2,6 +2,7 @@
 
 from django.test import TestCase, Client
 from .models import Student, Term, User, Preference
+from .admin import GoogleDrive, get_difference, sort_by_sheet
 import json
 
 client = Client()
@@ -11,33 +12,22 @@ Tests the /api/students list that should return a list of all the students
 """
 class ApiStudentsTest(TestCase):
     def setUp(self):
-        """
-        Set up a test scenario with two terms, one that contains the first three students
-        and the other containing the fourth one.
-
-        """
-        self.term1 = Term.objects.create(year=2016, quarter=1)
-        self.term2 = Term.objects.create(year=2016, quarter=2)
-
-        self.paul = Student.objects.create(student_number=1, email='paul@avans.nl', name='Paul Wagener', term=self.term1)
-        self.reinier = Student.objects.create(student_number=2, email='reinier@avans.nl', name='Reinier Dickhout', term=self.term1)
-        self.bob = Student.objects.create(student_number=3, email='bob@avans.nl', name=u'Bõb van der PUTTEN', term=self.term1) # test unicode
-        self.andre = Student.objects.create(student_number=4, email='andre@avans.nl', name=u'André Gehring', term=self.term2)
+        self.paul = Student.objects.create(student_number=1, name='Paul Wagener')
+        self.reinier = Student.objects.create(student_number=2, name='Reinier Dickhout')
+        self.bob = Student.objects.create(student_number=3, name=u'Bõb van der PUTTEN') # test unicode
 
         self.user = User.objects.create_user(username='pwagener', is_student=True, student=self.paul)
         client.login(username=self.user.username)
 
         """
-        The result should be the other two students from our term
+        The result should be the other two students
         Paul is excluded because that is the logged in user
-        and Andre is excluded because he is in another term
+        Bob should be firsed because it is alphabetical
         """
         self.expected = [
-            {u'email': u'bob@avans.nl', u'name': u'Bõb van der PUTTEN'},
-            {u'email': u'reinier@avans.nl', u'name': u'Reinier Dickhout'},
+            {'student_number': 3, 'name': u'Bõb van der PUTTEN'},
+            {'student_number': 2, 'name': 'Reinier Dickhout'},
         ]
-
-
 
     def test_standard(self):
         response = client.get('/api/students')
@@ -97,16 +87,15 @@ Tests the /api/user url, should return information about the current logged in u
 class ApiUserTest(TestCase):
     def setUp(self):
 
-        student = Student.objects.create(student_number=1, email='paul@avans.nl', name=u'Paul Wagener', term=Term.objects.create(year=2016, quarter=1, major='SO'))
+        student = Student.objects.create(student_number=1, name='Paul Wagener')
 
         self.user_student = User.objects.create_user(username='pwagener', is_student=True, student=student)
-
         self.user_teacher = User.objects.create_user(username='agehring', is_student=False)
 
     def test_student(self):
         client.login(username=self.user_student.username)
 
-        expected = {"username": "pwagener", "student": {'email': 'paul@avans.nl', 'name': 'Paul Wagener', 'term': 'SO1 (2016-2017)'}}
+        expected = {'username': 'pwagener', 'student': {'student_number': 1, 'name': 'Paul Wagener'}}
 
         response = client.get('/api/user')
         self.assertEqual(expected, response.json())
@@ -114,7 +103,7 @@ class ApiUserTest(TestCase):
     def test_teacher(self):
         client.login(username=self.user_teacher.username)
 
-        expected = {"username": "agehring"}
+        expected = {'username': 'agehring'}
 
         response = client.get('/api/user')
         self.assertEqual(expected, response.json())
@@ -125,11 +114,9 @@ Should return information about the current preference and be able to POST new p
 """
 class ApiPreferenceTest(TestCase):
     def setUp(self):
-        term = Term.objects.create(year=2016, quarter=1)
-
-        self.paul = Student.objects.create(student_number=1, email='paul@avans.nl', name=u'Paul Wagener', term=term)
-        self.bart = Student.objects.create(student_number=2, email='bart@avans.nl', name=u'Bart Gelens', term=term)
-        self.stijn = Student.objects.create(student_number=3, email='stijn@avans.nl', name=u'Stijn Smulders', term=term)
+        self.paul = Student.objects.create(student_number=1, name='Paul Wagener')
+        self.bart = Student.objects.create(student_number=2, name='Bart Gelens')
+        self.stijn = Student.objects.create(student_number=3, name='Stijn Smulders')
         self.user = User.objects.create_user(username='pwagener', is_student=True, student=self.paul)
 
         client.login(username=self.user.username)
@@ -142,7 +129,7 @@ class ApiPreferenceTest(TestCase):
         Preference.objects.create(student=self.paul, preference_for=self.bart)
 
         expected = {
-            'email': 'bart@avans.nl',
+            'student_number': 2,
             'name': 'Bart Gelens'
         }
 
@@ -154,7 +141,7 @@ class ApiPreferenceTest(TestCase):
         Preference.objects.create(student=self.paul, preference_for=self.bart)
 
         expected = {
-            'email': 'bart@avans.nl',
+            'student_number': 2,
             'name': 'Bart Gelens',
             'reciprocal': True
         }
@@ -170,13 +157,13 @@ class ApiPreferenceTest(TestCase):
         client.get('/api/preference')
 
     def test_post_preference(self):
-        response = client.post('/api/preference', json.dumps({'email': 'bart@avans.nl'}), content_type='application/json')
+        response = client.post('/api/preference', json.dumps({'student_number': 2}), content_type='application/json')
 
         self.assertTrue(Preference.objects.filter(student=self.paul, preference_for=self.bart).exists())
 
         # Check that the POST response behaves like a GET
         expected = {
-            'email': 'bart@avans.nl',
+            'student_number': 2,
             'name': 'Bart Gelens'
         }
         self.assertEqual(expected, response.json())
@@ -184,7 +171,7 @@ class ApiPreferenceTest(TestCase):
     def test_post_overrides_previous_preference(self):
         Preference.objects.create(student=self.paul, preference_for=self.stijn)
 
-        client.post('/api/preference', json.dumps({'email': 'bart@avans.nl'}), content_type='application/json')
+        client.post('/api/preference', json.dumps({'student_number': 2}), content_type='application/json')
 
         self.assertEquals(1, Preference.objects.all().count())
         self.assertTrue(Preference.objects.filter(student=self.paul, preference_for=self.bart).exists())
@@ -197,10 +184,67 @@ class ApiPreferenceTest(TestCase):
         self.assertEquals(0, Preference.objects.all().count())
 
     def test_post_no_self_preference(self):
-        client.post('/api/preference', json.dumps({'email': 'paul@avans.nl'}), content_type='application/json')
+        client.post('/api/preference', json.dumps({'student_number': 1}), content_type='application/json')
 
         self.assertEquals(0, Preference.objects.all().count())
 
+class GoogleDriveTest(TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.googledrive = GoogleDrive()
+
+    @classmethod
+    def tearDownClass(cls):
+        pass
+
+    def test_get_students(self):
+        students = self.googledrive.get_students('1VSPpEuiSAfmAEhzpR11T6qRr6Dm32HWx3k9fW1hlSJw')
+        self.assertEquals(
+            [{'sheet': 'IN01', 'student_number': 2097174, 'name': u'Jorrit Aärts'},
+             {'sheet': 'IN01', 'student_number': 2113371, 'name': 'Rob van den Akker'},
+             {'sheet': 'IN01', 'student_number': 2098472, 'name': 'Quirijn Akkermans'},
+             {'sheet': 'SWA13', 'student_number': 2077073, 'name': 'Bert Alderliesten'},
+             {'sheet': 'SWA13', 'student_number': 2079014, 'name': 'Mark Arnoldussen'}
+            ], students)
+
+class GetDifferenceTest(TestCase):
+
+    def setUp(self):
+        Student.objects.create(student_number=1, name='Paul Wagener')
+        Student.objects.create(student_number=2, name='Bart Gelens')
+        Student.objects.create(student_number=4, name='Bob van der Putten')
+
+    def test_get_difference(self):
+
+        changed, deleted = get_difference([
+            {'student_number': 1, 'name': 'Paul Blapener', 'sheet': 'IN01'},
+            {'student_number': 2, 'name': 'Bart Gelens', 'sheet': 'IN02'},
+            {'student_number': 3, 'name': 'Stijn Smulders', 'sheet': 'IN03'},
+        ])
+
+        self.assertEquals([
+            {'student_number': 1, 'name': 'Paul Blapener', 'sheet': 'IN01', 'change': 'update'},
+            {'student_number': 3, 'name': 'Stijn Smulders', 'sheet': 'IN03', 'change': 'insert'},
+        ], changed)
+
+        self.assertEquals([{'student_number': 4, 'name': 'Bob van der Putten'}],
+            deleted)
 
 
+class SortBySheetTest(TestCase):
+    def test_sort_by_sheet(self):
+        students = sort_by_sheet([
+            {'student_number': 1, 'name': 'Paul Wagener', 'sheet': 'IN01'},
+            {'student_number': 2, 'name': 'Bart Gelens', 'sheet': 'IN01'},
+            {'student_number': 3, 'name': 'Stijn Smulders', 'sheet': 'IN02'}])
 
+        self.assertEquals(students,
+            [{'sheet': 'IN01', 'students': [
+                {'student_number': 1, 'name': 'Paul Wagener'},
+                {'student_number': 2, 'name': 'Bart Gelens'}
+                ]},
+            {'sheet': 'IN02', 'students': [
+                {'student_number': 3, 'name': 'Stijn Smulders'}
+                ]}
+            ])

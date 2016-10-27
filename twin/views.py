@@ -25,9 +25,8 @@ def api_user(request):
 
     if request.user.student <> None:
             user['student'] = {
-                'email': request.user.student.email,
-                'name': request.user.student.name,
-                'term': str(request.user.student.term)
+                'student_number': request.user.student.student_number,
+                'name': request.user.student.name
             }
     return HttpResponse(json.dumps(user), content_type='application/json')
 
@@ -35,7 +34,7 @@ def api_user(request):
 GET:  Returns which other student the (student)user has as preference.
       It does so with the following JSON:
       {
-         'email': <email address>
+         'student_number': <student number>
          'name': <full name>
          'reciprocal': True (only if that other student has you as a preference)
       }
@@ -43,7 +42,7 @@ GET:  Returns which other student the (student)user has as preference.
 
 POST: Allows a student to set a new preference, the request body has to have the following format:
       {
-          'email': <email address>
+          'student_number': <student number>
       }
       or `null`
       It returns the new preference as described in GET in the response
@@ -62,13 +61,13 @@ def api_preference(request):
 
         content = json.loads(request.body)
 
-        if isinstance(content, dict) and 'email' in content:
-            email = content['email']
+        if isinstance(content, dict) and 'student_number' in content:
+            student_number = int(content['student_number'])
 
-            if email <> request.user.student.email:
+            if student_number <> request.user.student.student_number:
                 preference = Preference()
                 preference.student = request.user.student
-                preference.preference_for = Student.objects.get(email=email)
+                preference.preference_for = Student.objects.get(student_number=student_number)
                 preference.save()
 
     # Find the preference
@@ -79,7 +78,7 @@ def api_preference(request):
 
     # Output to user
     preference_json = {
-        'email': preference.preference_for.email,
+        'student_number': preference.preference_for.student_number,
         'name': preference.preference_for.name
     }
 
@@ -97,14 +96,12 @@ Returns a list of students that the logged in student can
 def api_students(request):
     if request.user.student:
         student_number = request.user.student.student_number
-        term_id = request.user.student.term.id
-
-        students = Student.objects.raw('SELECT student_number, name, email, EXISTS(SELECT 1 FROM twin_preference WHERE student_id=student_number AND preference_for_id=%s) AS reciprocal FROM twin_student WHERE term_id=%s AND student_number<>%s ORDER BY name', [student_number, term_id, student_number])
+        students = Student.objects.raw('SELECT student_number, name, EXISTS(SELECT 1 FROM twin_preference WHERE student_id=student_number AND preference_for_id=%s) AS reciprocal FROM twin_student WHERE student_number<>%s ORDER BY name', [student_number, student_number])
     else:
         students = Student.objects.all().order_by('name')
 
     def make_json(student):
-        data = {'name': student.name, 'email': student.email}
+        data = {'name': student.name, 'student_number': student.student_number}
         if hasattr(student, 'reciprocal') and student.reciprocal:
             data['reciprocal'] = True
         return data
@@ -114,13 +111,13 @@ def api_students(request):
     return HttpResponse(json.dumps(students), content_type='application/json')
 
 import random
-def debug_quickswitch(request, email):
-    student = Student.objects.get(email=email)
+def debug_quickswitch(request, student_number):
+    student = Student.objects.get(student_number=student_number)
     try:
         user = User.objects.get(student=student)
     except:
         user = User()
-        user.username = email
+        user.username = student_number
         user.student = student
         user.is_student = True
         user.save()

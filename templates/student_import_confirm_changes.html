@@ -1,0 +1,78 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<script src="https://code.jquery.com/jquery-3.1.1.slim.min.js"
+  integrity="sha256-/SIrNqv8h6QGKDuNoLGA4iret+kyesCkHGzVUUV0shc="
+  crossorigin="anonymous"></script>
+<script>
+function toggle(checkbox) {
+  $(checkbox).find('+ul input').prop('checked', $(checkbox).prop('checked'));
+}
+
+function toggle_all(checkbox) {
+  $('input').prop('checked', $(checkbox).prop('checked'));
+}
+</script>
+
+<style>
+ul .icon {
+    height: 13px;
+    width: 13px;
+    vertical-align: middle;
+}
+</style>
+<h1>Studenten importeren</h1>
+
+<p>Kies de wijzigingen om door te voeren uit de studentenlijst:</p>
+
+<ul>
+{% for sheet in students %}
+  <li><a href="#{{sheet.sheet}}">{{sheet.sheet}}</a></li>
+{% endfor %}
+</ul>
+
+{% if students %}<input type="checkbox" onclick="toggle_all(this)"> Alles selecteren{% endif %}
+
+<form method="POST">
+{% csrf_token %}
+{% for sheet in students %}
+<a id="{{sheet.sheet}}"></a>
+<h2>{{ sheet.sheet }}</h2>
+<input type="checkbox" onclick="toggle(this)"> Alles selecteren
+<ul>
+  {% for student in sheet.students %}
+    <li>
+      <input type="checkbox" name="student-upsert-{{ student.student_number }}" value="{{ student.name }}">
+      {% if student.change == 'update' %}
+        <img src="/img/update.png" class="icon">
+      {% elif student.change == 'insert' %}
+        <img src="/img/insert.png" class="icon">
+      {% endif %}
+        {{student.name}}
+    </li>
+  {% empty %}
+    Geen wijzigingen...
+  {% endfor %}
+</ul>
+{% empty %}
+<p>Geen wijzigingen...</p>
+{% endfor %}
+
+{% if deleted_students %}
+  <p>Deze studenten staan in TWIN maar niet meer in de studentenlijst.
+  Selecteer ze om ze te verwijderen uit de TWIN database.</p>
+
+  <ul>
+  {% for student in deleted_students %}
+      <li>
+        <img src="/img/delete.png" class="icon">
+        <input type="checkbox" name="student-delete-{{ student.student_number }}" value="delete" />
+        {{ student.name }}
+    </li>
+  {% endfor %}
+  </ul>
+{% endif %}
+<button type="submit">Verstuur</button>
+</form>
+
+{% endblock %}

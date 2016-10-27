@@ -64,7 +64,7 @@ app.controller('TwinController', function($scope, $http, $timeout) {
             if(student === null) {
                 var post = 'null';
             } else {
-                var post = {email: student.email};
+                var post = {student_number: student.student_number};
             }
             $http.post('/api/preference', post).then(function(response) {
                 if(response.data) {
@@ -78,7 +78,7 @@ app.controller('TwinController', function($scope, $http, $timeout) {
     /* DEBUG!!! */
     $scope.$watch('debug_user', function(student) {
         if(student) {
-            window.location.replace("/debug/quickswitch/" + student.email);
+            window.location.replace("/debug/quickswitch/" + student.student_number);
         }
     });
     /* END DEBUG!!! */
