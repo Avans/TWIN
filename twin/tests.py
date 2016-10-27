@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from django.test import TestCase, Client
-from .models import Student, Term, User, Preference
+from .models import Student, User, Preference
 from .admin import GoogleDrive, get_difference, sort_by_sheet
 import json
 

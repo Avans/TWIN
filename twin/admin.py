@@ -2,7 +2,7 @@ from django.contrib.admin import AdminSite, ModelAdmin
 from django.conf.urls import url
 from django.http import HttpResponse
 from django.shortcuts import render
-from .models import Student, Term, Preference
+from .models import Student, Preference
 import settings
 
 # Load the Google API's
@@ -201,4 +201,3 @@ class Admin(ModelAdmin):
 site = TwinAdminSite(name='admin')
 site.register(Student)
 site.register(Preference)
-site.register(Term)

@@ -110,18 +110,3 @@ class Preference(models.Model):
         verbose_name = "Voorkeur"
         verbose_name_plural = "Voorkeuren"
         ordering = ["student"]
-
-"""
-A term (dutch: Blok) is a quarter part of a curriculum for a specific year
-"""
-class Term(models.Model):
-    year = models.IntegerField(verbose_name='Schooljaar', default=datetime.date.today().year,choices=[(year, '{0}-{1}'.format(year, year+1)) for year in range(datetime.date.today().year-10, datetime.date.today().year+10)])
-    quarter = models.IntegerField(choices=[(1, 'Periode 1'), (2, 'Periode 2'), (3, 'Periode 3'), (4, 'Periode 4')], verbose_name='Periode')
-    major = models.CharField(max_length=10)
-
-    def __unicode__(self):
-        return u'{0}{1} ({2}-{3})'.format(self.major, self.quarter, self.year, self.year+1)
-
-    class Meta:
-        verbose_name = "Blok"
-        verbose_name_plural = "Blokken"
