@@ -1,0 +1,13 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<h1>Groepen maken</h1>
+
+<p>Kies een worksheet om groepen mee te maken</p>
+
+<ul>
+  {% for sheet in sheets %}
+  <li><a href="/admin/twin/groups/{{spreadsheet_id}}/{{sheet}}">{{sheet}}</a>
+  {% endfor %}
+</ul>
+{% endblock %}

@@ -30,6 +30,12 @@ class GoogleDrive(object):
             orderBy="name"
             ).execute()['files']
 
+    def get_sheets(self, spreadsheet_id):
+        worksheets = self.sheets.spreadsheets().get(
+            spreadsheetId=spreadsheet_id).execute()['sheets']
+
+        return [s['properties']['title'] for s in worksheets]
+
     def get_students(self, spreadsheet_id):
         """
         Return an array with all the students in the sheet, ordered by
@@ -158,6 +164,24 @@ def get_difference(all_students):
 
     return changed_students, deleted_students
 
+def get_pairs(all_students):
+    """
+    Get a list of all the pairs that are present in the students provided as a list of Preference objects
+    """
+    all_student_numbers = [s['student_number'] for s in all_students]
+
+    all_pairs = Preference.objects.raw("""
+            SELECT id, student_id, preference_for_id
+            FROM twin_preference AS tp
+            WHERE EXISTS(
+                SELECT 1
+                FROM twin_preference AS tp2
+                WHERE tp.student_id = tp2.preference_for_id
+                AND tp.preference_for_id = tp2.student_id)
+            AND student_id < preference_for_id
+            ORDER BY student_id""")
+
+    return filter(lambda pref: pref.student.student_number in all_student_numbers and pref.preference_for.student_number in all_student_numbers, all_pairs)
 
 def student_import(request, spreadsheet_id):
     if spreadsheet_id is None:
@@ -182,6 +206,18 @@ def student_import(request, spreadsheet_id):
     return render(request, 'student_import_confirm_changes.html',
         {'students': students, 'deleted_students': deleted_students})
 
+def make_groups(request, spreadsheet_id, sheet):
+    if spreadsheet_id is None:
+        return render(request, 'make_groups_choose_spreadsheet.html', {'sheets': googledrive.get_spreadsheets()})
+    elif sheet is None:
+        return render(request, 'make_groups_choose_sheet.html', {'spreadsheet_id': spreadsheet_id, 'sheets': googledrive.get_sheets(spreadsheet_id)})
+
+    students = googledrive.get_students(spreadsheet_id)
+    students = [s['students'] for s in sort_by_sheet(students) if s['sheet'] == sheet][0]
+
+    pairs = get_pairs(students)
+    return render(request, 'make_groups.html', {'pairs': pairs, 'sheet': sheet})
+
 
 class TwinAdminSite(AdminSite):
     site_header = 'TWIN administratie'
@@ -190,7 +226,7 @@ class TwinAdminSite(AdminSite):
     def get_urls(self):
         urls = [
             url(r'^twin/student/import(?:/([^/]+))?', student_import),
-            url(r'^twin/groups$', student_import)
+            url(r'^twin/groups(?:/([^/]+))?(?:/([^/]+))?', make_groups)
         ]
 
         return AdminSite.get_urls(self) + urls

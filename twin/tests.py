@@ -2,7 +2,7 @@
 
 from django.test import TestCase, Client
 from .models import Student, User, Preference
-from .admin import GoogleDrive, get_difference, sort_by_sheet
+from .admin import GoogleDrive, get_difference, sort_by_sheet, get_pairs
 import json
 
 client = Client()
@@ -248,3 +248,44 @@ class SortBySheetTest(TestCase):
                 {'student_number': 3, 'name': 'Stijn Smulders'}
                 ]}
             ])
+
+class GetPairsTest(TestCase):
+    def setUp(self):
+        s1 = Student.objects.create(student_number=1, name='Paul Wagener')
+        s2 = Student.objects.create(student_number=2, name='Bart Gelens')
+        s3 = Student.objects.create(student_number=3, name='Reinier Dickhout')
+        s4 = Student.objects.create(student_number=4, name='Bob van der Putten')
+        s5 = Student.objects.create(student_number=5, name='Andre Gehring')
+
+        self.p1a = Preference.objects.create(student=s1, preference_for=s2)
+        self.p1b = Preference.objects.create(student=s2, preference_for=s1)
+        self.p2a = Preference.objects.create(student=s3, preference_for=s4)
+        self.p2b = Preference.objects.create(student=s4, preference_for=s3)
+        self.p3 = Preference.objects.create(student=s5, preference_for=s1)
+
+        self.j1 = {'student_number': 1, 'name': 'Paul Wagener'}
+        self.j2 = {'student_number': 2, 'name': 'Bart Gelens'}
+        self.j3 = {'student_number': 3, 'name': 'Reinier Dickhout'}
+        self.j4 = {'student_number': 4, 'name': 'Bob van der Putten'}
+        self.j5 = {'student_number': 5, 'name': 'Andre Gehring'}
+
+
+    def test_simple_pair(self):
+        pairs = get_pairs([self.j1, self.j2])
+
+        self.assertEquals(1, len(pairs))
+        self.assertEquals(self.p1a, pairs[0])
+
+    def test_multiple_pairs(self):
+        pairs = get_pairs([self.j1, self.j2, self.j3, self.j4])
+
+        self.assertEquals(2, len(pairs))
+        self.assertEquals(self.p1a, pairs[0])
+        self.assertEquals(self.p2a, pairs[1])
+
+    def test_pairs_not_in_given_students(self):
+        pairs = get_pairs([self.j1, self.j3, self.j5])
+
+        self.assertEquals(0, len(pairs))
+
+
