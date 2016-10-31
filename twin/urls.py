@@ -15,4 +15,4 @@ urlpatterns = [
     url(r'^debug/quickswitch/(.+)$', views.debug_quickswitch),
     url(r'^admin/login/', avans.login),
     url(r'^admin/', admin.site.urls),
-] + static('/', document_root='public')
+] + static('/static', document_root='static')

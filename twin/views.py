@@ -5,7 +5,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse, HttpResponse, HttpResponseRedirect
 from django.core import serializers
 import oauth2 as oauth
-import cgi, json, secrets, avans
+import cgi, json, settings, secrets, avans
 from models import Preference, Student
 User = get_user_model()
 
@@ -13,7 +13,7 @@ def home(request):
     if not request.user.is_authenticated():
         return avans.login(request)
     else:
-        return HttpResponse(open('public/index.html').read())
+        return HttpResponse(open(settings.BASE_DIR + '/static/index.html').read())
 
 def logout(request):
     django_logout(request)
