@@ -44,9 +44,9 @@ ul .icon {
     <li>
       <input type="checkbox" name="student-upsert-{{ student.student_number }}" value="{{ student.name }}">
       {% if student.change == 'update' %}
-        <img src="/img/update.png" class="icon">
+        <img src="/static/img/update.png" class="icon">
       {% elif student.change == 'insert' %}
-        <img src="/img/insert.png" class="icon">
+        <img src="/static/img/insert.png" class="icon">
       {% endif %}
         {{student.name}}
     </li>
@@ -65,7 +65,7 @@ ul .icon {
   <ul>
   {% for student in deleted_students %}
       <li>
-        <img src="/img/delete.png" class="icon">
+        <img src="/static/img/delete.png" class="icon">
         <input type="checkbox" name="student-delete-{{ student.student_number }}" value="delete" />
         {{ student.name }}
     </li>
