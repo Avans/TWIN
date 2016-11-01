@@ -3,7 +3,7 @@ from django.conf.urls import url
 from django.http import HttpResponse
 from django.shortcuts import render
 from .models import Student, Preference
-import settings
+import settings, csv, StringIO
 
 # Load the Google API's
 import httplib2
@@ -216,7 +216,23 @@ def make_groups(request, spreadsheet_id, sheet):
     students = [s['students'] for s in sort_by_sheet(students) if s['sheet'] == sheet][0]
 
     pairs = get_pairs(students)
-    return render(request, 'make_groups.html', {'pairs': pairs, 'sheet': sheet})
+
+    if 'excel' in request.GET:
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="{0}_twins.csv"'.format(sheet)
+
+        csv_writer = csv.writer(response, delimiter=';', quotechar='"')
+        i = 1
+        for pair in pairs:
+            csv_writer.writerow([i, pair.student.student_number, pair.student.name])
+            csv_writer.writerow([i, pair.preference_for.student_number, pair.preference_for.name])
+            i += 1
+
+        return response
+
+    else:
+
+        return render(request, 'make_groups.html', {'pairs': pairs, 'sheet': sheet})
 
 
 class TwinAdminSite(AdminSite):
