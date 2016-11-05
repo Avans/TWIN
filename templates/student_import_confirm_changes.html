@@ -61,7 +61,7 @@ ul .icon {
 {% if deleted_students %}
   <p>Deze studenten staan in TWIN maar niet meer in de studentenlijst.
   Selecteer ze om ze te verwijderen uit de TWIN database.</p>
-
+  <input type="checkbox" onclick="toggle(this)"> Alles selecteren
   <ul>
   {% for student in deleted_students %}
       <li>
