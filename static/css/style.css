@@ -53,8 +53,9 @@ input#student {
 }
 
 .reciprocal {
-  background-color: #d1fffb;
-  font-weight: bold;
+  background-color: #d1fffb !important;
+  font-weight: bold !important;
+  font-size: x-large !important;
 }
 
 .info, .warning {
