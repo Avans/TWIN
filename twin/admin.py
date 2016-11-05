@@ -242,7 +242,7 @@ class TwinAdminSite(AdminSite):
     def get_urls(self):
         urls = [
             url(r'^twin/student/import(?:/([^/]+))?', student_import),
-            url(r'^twin/groups(?:/([^/]+))?(?:/([^/]+))?', make_groups)
+            url(r'^twin/groups(?:/([^/]+))?(?:/(.+))?', make_groups)
         ]
 
         return AdminSite.get_urls(self) + urls
