@@ -31,10 +31,10 @@
     </header>
 
     <article>
-      <div class="reciprocals">
+      <div class="reciprocals" ng-show="(filtered = students | filter: {reciprocal: true}).length">
         <p>Kies snel iemand die al voor jou heeft gekozen:</p>
         <ul>
-          <li ng-repeat="student in students |filter: {reciprocal: true}"><a href="#" ng-click="select(student)">{{student.name}}</a></li>
+          <li ng-repeat="student in students | filter: {reciprocal: true}"><a href="#" ng-click="select(student)">{{student.name}}</a></li>
         </ul>
       </div>
 
