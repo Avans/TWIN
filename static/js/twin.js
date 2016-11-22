@@ -3,6 +3,7 @@ var app = angular.module('TWIN', []);
 app.controller('TwinController', function($scope, $http, $timeout) {
 
     $scope.preference = null;
+    $scope.somechange = false;
 
     // Get the list of all the students
     $http.get('/api/students').then(function(response) {
@@ -17,6 +18,7 @@ app.controller('TwinController', function($scope, $http, $timeout) {
     // Get the user preference information
     $http.get('/api/preference').then(function(response) {
         $scope.preference = response.data;
+        $scope.selected = response.data;
     });
 
 
@@ -33,7 +35,8 @@ app.controller('TwinController', function($scope, $http, $timeout) {
                 select: function(event, ui) {
                     // Call with timeout to make sure the whole $digest cycle keeps working
                     $timeout(function() {
-                        $scope.changePreference(ui.item.student);
+                        $scope.selected = ui.item.student;
+                        $scope.somechange = true;
                     })
                 }
             }).data("ui-autocomplete")._renderItem = function( ul, item ) {
@@ -49,31 +52,33 @@ app.controller('TwinController', function($scope, $http, $timeout) {
             $('#student').on('input change', function(e) {
                 if($(this).val() === '') {
                     $timeout(function() {
-                        $scope.changePreference(null);
+                        $scope.somechange = true;
+                        $scope.selected = null;
                     })
                 }
             })
         }
     });
 
+    $scope.save = function() {
+        if($scope.selected !== $scope.preference) {
+            $scope.saving = true;
 
-    $scope.changePreference = function(student) {
-        if(student !== $scope.preference) {
-            $scope.preference = student;
-
-            if(student === null) {
+            if($scope.selected === null) {
                 var post = 'null';
             } else {
-                var post = {student_number: student.student_number};
+                var post = {student_number: $scope.selected.student_number};
             }
             $http.post('/api/preference', post).then(function(response) {
-                if(response.data) {
-                    angular.copy(response.data, $scope.preference);
+                $scope.saving = false;
+                if(response.data == null) {
+                    $scope.preference = null
+                } else {
+                    $scope.preference = $scope.selected;
                 }
             });
         }
     }
-
 
     /* DEBUG!!! */
     $scope.$watch('debug_user', function(student) {

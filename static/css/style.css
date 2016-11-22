@@ -52,6 +52,136 @@ input#student {
   margin: 5pt;
 }
 
+.save {
+  background-color: #428bca;
+  border-color: #357ebd;
+  color: white;
+  padding: 10px 16px;
+  font-size: 18px;
+  line-height: 1.33;
+  border-radius: 6px;
+  border-style: solid;
+  border-width: 1px;
+  display: block;
+  margin: 0 auto;
+  position: relative;
+  transition: 0.5s all;
+  cursor: pointer;
+  outline: none;
+}
+
+.save::after, .save::before{
+  position: absolute;
+  right: 5px;
+  top: 5px;
+  opacity: 0;
+  content: "";
+  display: block;
+  background-color: white;
+  width: 30px;
+  height: 30px;
+  transition: 0.5s all;
+
+  border-radius: 100%;
+  animation: sk-bounce 2.0s infinite ease-in-out;
+}
+
+.saving::after, .saving::before {
+  opacity: 0.7;
+}
+
+.saving {
+  cursor: default;
+  padding-right: 45px;
+  opacity: 0.7;
+  content: "Opslaan...";
+}
+
+.saving::after, .saving::before{
+}
+
+.saving::after {
+  animation-delay: -1.0s;
+}
+
+@-webkit-keyframes sk-rotate { 100% { -webkit-transform: rotate(360deg) }}
+@keyframes sk-rotate { 100% { transform: rotate(360deg); -webkit-transform: rotate(360deg) }}
+
+@-webkit-keyframes sk-bounce {
+  0%, 100% { -webkit-transform: scale(0.0) }
+  50% { -webkit-transform: scale(1.0) }
+}
+
+@keyframes sk-bounce {
+  0%, 100% {
+    transform: scale(0.0);
+    -webkit-transform: scale(0.0);
+  } 50% {
+    transform: scale(1.0);
+    -webkit-transform: scale(1.0);
+  }
+}
+
+.saved {
+  background-color: #5dc35d;
+  border: 1px solid #19b319;
+  cursor: default;
+}
+
+.checkmark__circle {
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  stroke-width: 2;
+  stroke-miterlimit: 10;
+  stroke: #0d8627;
+  fill: none;
+  animation: stroke .6s cubic-bezier(0.650, 0.000, 0.450, 1.000) forwards;
+}
+
+.checkmark {
+  cursor: pointer;
+  display: inline;
+  vertical-align: middle;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  stroke-width: 2;
+  stroke: #fff;
+  stroke-miterlimit: 10;
+  box-shadow: inset 0px 0px 0px #0d8627;
+  animation: fill .4s ease-in-out .4s forwards, scale .3s ease-in-out .9s both;
+}
+
+.checkmark__check {
+  transform-origin: 50% 50%;
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: stroke .3s cubic-bezier(0.650, 0.000, 0.450, 1.000) .8s forwards;
+}
+
+@keyframes stroke {
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes scale {
+  0%,
+  100% {
+    transform: none;
+  }
+  50% {
+    transform: scale3d(1.1, 1.1, 1);
+  }
+}
+
+@keyframes fill {
+  100% {
+    box-shadow: inset 0px 0px 0px 30px #0d8627;
+  }
+}
+
+
 .reciprocal {
   background-color: #d1fffb !important;
   font-weight: bold !important;
