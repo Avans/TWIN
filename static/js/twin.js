@@ -21,6 +21,10 @@ app.controller('TwinController', function($scope, $http, $timeout) {
         $scope.selected = response.data;
     });
 
+    $scope.select = function(student) {
+        $scope.selected = student;
+        $scope.somechange = true;
+    }
 
     // Fill the autocomplete
     $scope.$watch('students', function(students) {

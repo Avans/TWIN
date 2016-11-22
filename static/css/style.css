@@ -52,6 +52,22 @@ input#student {
   margin: 5pt;
 }
 
+.reciprocals {
+  font-size: small;
+  color: grey;
+  border: 2px solid grey;
+  border-radius: 5px;
+  position: absolute;
+  right: 30px;
+  width: 20%;
+  padding: 10px;
+}
+
+.reciprocals ul {
+  list-style-type: none;
+  margin: 5px;
+}
+
 .save {
   background-color: #428bca;
   border-color: #357ebd;
