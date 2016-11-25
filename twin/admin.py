@@ -3,7 +3,7 @@ from django.conf.urls import url
 from django.http import HttpResponse
 from django.shortcuts import render
 from .models import Student, Preference
-import settings, csv, StringIO
+import settings, csv, StringIO, xlsxwriter, io, re
 
 # Load the Google API's
 import httplib2
@@ -206,33 +206,109 @@ def student_import(request, spreadsheet_id):
     return render(request, 'student_import_confirm_changes.html',
         {'students': students, 'deleted_students': deleted_students})
 
-def make_groups(request, spreadsheet_id, sheet):
+
+"""
+Generates a 2-dimensional array that can be given to the user as output
+It takes as input a list of all students in dictionary form,
+and the sheet that is supposed to be outputted
+
+It outputs an array of the following format:
+[
+    ['1a', 2077000, 'Paul',     'IN01', 'koppel'],
+    ['1b', 2077043, 'Bob',      'IN01', 'koppel']
+    ['2a', 2076032, 'Reinier',  'IN01', 'mismatch']
+    ['2a', 2076246, 'Rob',      'IN01', 'mismatch']
+    ['3',  2079414, 'Bart',     'IN01', 'single']
+    ['4',  2079446, 'Stijn',    'IN01', 'single']
+]
+The columns are as follows:
+- Pair number
+- Student number
+- Student name
+- Sheet the student is originating from
+- Status
+
+The status can be one of three things: (always in the given order)
+* 'koppel'
+   These are two students that have chosen eachother as a preference
+   and are both from the given sheet. They have matching pair numbers (a and b)
+* 'mismatch'
+   These are two students that have chosen eachother as a preference,
+   but only one of them is from the given sheet
+* 'single'
+   These are all the students that are not part of a pair
+"""
+def array_excel_output(all_students, sheet):
+    pairs = get_pairs(all_students)
+    sheet_student_numbers = [s['student_number'] for s in all_students if s['sheet'] == sheet]
+
+    paired_student_numbers = set()
+    for pair in pairs:
+        paired_student_numbers.add(pair.student.student_number)
+        paired_student_numbers.add(pair.preference_for.student_number)
+
+    sheet_lookup = {}
+    for student in all_students:
+        sheet_lookup[student['student_number']] = student['sheet']
+
+    output = []
+    pair_number = 1
+
+    # First do all the 'koppels'
+    for pair in pairs:
+        if pair.student.student_number in sheet_student_numbers \
+            and pair.preference_for.student_number in sheet_student_numbers:
+            output.append(['{0}a'.format(pair_number), pair.student.student_number, pair.student.name, sheet, 'koppel'])
+            output.append(['{0}b'.format(pair_number), pair.preference_for.student_number, pair.preference_for.name, sheet, 'koppel'])
+            pair_number += 1
+
+    # Then do all the mismatches
+    for pair in pairs:
+        if (pair.student.student_number in sheet_student_numbers) \
+            ^ (pair.preference_for.student_number in sheet_student_numbers):
+            output.append(['{0}a'.format(pair_number), pair.student.student_number, pair.student.name, sheet_lookup[pair.student.student_number], 'mismatch'])
+            output.append(['{0}b'.format(pair_number), pair.preference_for.student_number, pair.preference_for.name, sheet_lookup[pair.preference_for.student_number], 'mismatch'])
+            pair_number += 1
+
+    # Then add all the singles
+    for student in all_students:
+        if student['sheet'] == sheet and student['student_number'] not in paired_student_numbers:
+            output.append([str(pair_number), student['student_number'], student['name'], sheet, 'single'])
+            pair_number += 1
+
+    return output
+
+def make_groups(request, spreadsheet_id):
     if spreadsheet_id is None:
         return render(request, 'make_groups_choose_spreadsheet.html', {'sheets': googledrive.get_spreadsheets()})
-    elif sheet is None:
-        return render(request, 'make_groups_choose_sheet.html', {'spreadsheet_id': spreadsheet_id, 'sheets': googledrive.get_sheets(spreadsheet_id)})
 
     students = googledrive.get_students(spreadsheet_id)
-    students = [s['students'] for s in sort_by_sheet(students) if s['sheet'] == sheet][0]
 
-    pairs = get_pairs(students)
+    seen = set()
+    sheets = [s['sheet'] for s in students if not (s['sheet'] in seen or seen.add(s['sheet']))]
 
-    if 'excel' in request.GET:
-        response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="{0}_twins.csv"'.format(sheet)
+    output = io.BytesIO()
+    workbook = xlsxwriter.workbook.Workbook(output, {'in_memory': True})
 
-        csv_writer = csv.writer(response, delimiter=';', quotechar='"')
-        i = 1
-        for pair in pairs:
-            csv_writer.writerow([i, pair.student.student_number, pair.student.name])
-            csv_writer.writerow([i, pair.preference_for.student_number, pair.preference_for.name])
-            i += 1
+    for sheet in sheets:
+        excel_output = array_excel_output(students, sheet)
 
-        return response
+        worksheet = workbook.add_worksheet(re.sub(r'[^\w\']', '', sheet))
+        row_i = 0
+        for row in excel_output:
+            worksheet.write_row(row_i, 0, row)
+            row_i += 1
 
-    else:
+        worksheet.set_column(0, 0, 3)
+        worksheet.set_column(2, 2, 30)
+        worksheet.set_column(3, 3, 14)
+    workbook.close()
+    output.seek(0)
 
-        return render(request, 'make_groups.html', {'pairs': pairs, 'sheet': sheet})
+    response = HttpResponse(output.read(), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response['Content-Disposition'] = "attachment; filename=twin.xlsx"
+
+    return response
 
 
 class TwinAdminSite(AdminSite):
@@ -242,7 +318,7 @@ class TwinAdminSite(AdminSite):
     def get_urls(self):
         urls = [
             url(r'^twin/student/import(?:/([^/]+))?', student_import),
-            url(r'^twin/groups(?:/([^/]+))?(?:/(.+))?', make_groups)
+            url(r'^twin/groups(?:/([^/]+))?', make_groups)
         ]
 
         return AdminSite.get_urls(self) + urls

@@ -2,7 +2,7 @@
 
 from django.test import TestCase, Client
 from .models import Student, User, Preference
-from .admin import GoogleDrive, get_difference, sort_by_sheet, get_pairs
+from .admin import GoogleDrive, get_difference, sort_by_sheet, get_pairs, array_excel_output
 import json
 
 client = Client()
@@ -288,4 +288,53 @@ class GetPairsTest(TestCase):
 
         self.assertEquals(0, len(pairs))
 
+class ArrayExcelOutputTest(TestCase):
+
+    def setUp(self):
+        s1 = Student.objects.create(student_number=1, name='Paul Wagener')
+        s2 = Student.objects.create(student_number=2, name='Bart Gelens')
+        s3 = Student.objects.create(student_number=3, name='Reinier Dickhout')
+        s4 = Student.objects.create(student_number=4, name='Bob van der Putten')
+        s5 = Student.objects.create(student_number=5, name='André Gehring')
+
+        self.p1a = Preference.objects.create(student=s1, preference_for=s2)
+        self.p1b = Preference.objects.create(student=s2, preference_for=s1)
+        self.p2a = Preference.objects.create(student=s3, preference_for=s4)
+        self.p2b = Preference.objects.create(student=s4, preference_for=s3)
+
+        self.students = [
+            {'student_number': 1, 'name': 'Paul Wagener', 'sheet': 'IN01'},
+            {'student_number': 2, 'name': 'Bart Gelens', 'sheet': 'IN01'},
+            {'student_number': 3, 'name': 'Reinier Dickhout', 'sheet': 'IN01'},
+            {'student_number': 4, 'name': 'Bob van der Putten', 'sheet': 'SWA13'},
+            {'student_number': 5, 'name': 'Stijn Smulders', 'sheet': 'IN01'},
+            {'student_number': 6, 'name': 'Andre Gehring', 'sheet': 'Zwervers'}
+        ]
+
+        # Students not in sheet, but in database
+        s6 = Student.objects.create(student_number=6, name='Martin Rodenburg')
+        s7 = Student.objects.create(student_number=7, name='Han van Osch')
+        Preference.objects.create(student=s6, preference_for=s7)
+        Preference.objects.create(student=s7, preference_for=s6)
+
+    def test_normal(self):
+
+        output = array_excel_output(self.students, 'IN01')
+
+        self.assertEquals(
+            [
+                ['1a', 1, 'Paul Wagener',       'IN01', 'koppel'],
+                ['1b', 2, 'Bart Gelens',        'IN01', 'koppel'],
+                ['2a', 3, 'Reinier Dickhout',   'IN01', 'mismatch'],
+                ['2b', 4, 'Bob van der Putten', 'SWA13', 'mismatch'],
+                ['3',  5, 'Stijn Smulders',      'IN01', 'single']
+            ], output)
+
+    def test_just_mismatch(self):
+        output = array_excel_output(self.students, 'SWA13')
+        self.assertEquals(
+            [
+                ['1a', 3, 'Reinier Dickhout',   'IN01', 'mismatch'],
+                ['1b', 4, 'Bob van der Putten', 'SWA13', 'mismatch'],
+            ], output)
 
