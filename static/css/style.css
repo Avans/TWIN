@@ -222,3 +222,13 @@ input#student {
   background-color: #ffde9e;
   border: 1px solid #958059;
 }
+
+.disclaimer {
+  color: grey;
+  position: fixed;
+  bottom: 5px;
+  font-size: small;
+  padding-left: 30%;
+  padding-right: 30%;
+}
+
