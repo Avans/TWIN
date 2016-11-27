@@ -35,7 +35,17 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'twin',
+    'constance',
+    'constance.backends.database',
 ]
+
+CONSTANCE_BACKEND = 'constance.backends.database.DatabaseBackend'
+CONSTANCE_SUPERUSER_ONLY = False
+CONSTANCE_CONFIG = {
+    'GOOGLE_DRIVE_FOLDER': ('0B7M39NIqrzwhYzM5Y2U3NTgtOWUzNy00ODM1LWE2MjAtMDNlMmMyMGUyOTVi',
+        'De drive folder waar de Google studenten sheets zich in bevinden.'
+        'Niet veranderen tenzij je weet wat je aan het doen bent.'),
+}
 
 STATIC_URL = '/public/'
 STATIC_ROOT = 'public'
@@ -74,9 +84,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'twin.wsgi.application'
-
-# Folder that contains the student list sheets
-DRIVE_FOLDER = '0B7M39NIqrzwhYzM5Y2U3NTgtOWUzNy00ODM1LWE2MjAtMDNlMmMyMGUyOTVi'
 
 # Database
 # https://docs.djangoproject.com/en/1.9/ref/settings/#databases

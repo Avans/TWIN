@@ -1,9 +1,10 @@
-from django.contrib.admin import AdminSite, ModelAdmin
+from django.contrib import admin
 from django.conf.urls import url
 from django.http import HttpResponse
 from django.shortcuts import render
 from .models import Student, Preference
-import settings, csv, StringIO, xlsxwriter, io, re
+import settings, csv, StringIO, xlsxwriter, io, re, types
+from constance import config
 
 # Load the Google API's
 import httplib2
@@ -25,7 +26,7 @@ class GoogleDrive(object):
         }]
         """
         return self.drive.files().list(
-            q="'{0}' in parents and mimeType = 'application/vnd.google-apps.spreadsheet'".format(settings.DRIVE_FOLDER),
+            q="'{0}' in parents and mimeType = 'application/vnd.google-apps.spreadsheet'".format(config.GOOGLE_DRIVE_FOLDER),
             fields="files(id, name, webViewLink)",
             orderBy="name"
             ).execute()['files']
@@ -310,22 +311,17 @@ def make_groups(request, spreadsheet_id):
 
     return response
 
+def get_urls(self):
+    urls = [
+        url(r'^twin/student/import(?:/([^/]+))?', student_import),
+        url(r'^twin/groups(?:/([^/]+))?', make_groups)
+    ]
 
-class TwinAdminSite(AdminSite):
-    site_header = 'TWIN administratie'
-    index_template = 'admin_index.html'
+    return urls + admin.AdminSite.get_urls(self)
 
-    def get_urls(self):
-        urls = [
-            url(r'^twin/student/import(?:/([^/]+))?', student_import),
-            url(r'^twin/groups(?:/([^/]+))?', make_groups)
-        ]
+admin.site.site_header = 'TWIN administratie'
+admin.site.index_template = 'admin_index.html'
+admin.site.get_urls = types.MethodType(get_urls, admin.site)
 
-        return AdminSite.get_urls(self) + urls
-
-class Admin(ModelAdmin):
-    pass
-
-site = TwinAdminSite(name='admin')
-site.register(Student)
-site.register(Preference)
+admin.site.register(Student)
+admin.site.register(Preference)
