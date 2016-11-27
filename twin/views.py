@@ -6,7 +6,7 @@ from django.http import JsonResponse, HttpResponse, HttpResponseRedirect
 from django.core import serializers
 import oauth2 as oauth
 import cgi, json, settings, secrets, avans
-from models import Preference, Student
+from models import Preference, PreferenceHistory, Student
 User = get_user_model()
 
 def home(request):
@@ -69,6 +69,13 @@ def api_preference(request):
                 preference.student = request.user.student
                 preference.preference_for = Student.objects.get(student_number=student_number)
                 preference.save()
+
+                # Also save as history
+                prefhistory = PreferenceHistory()
+                prefhistory.student = request.user.student
+                prefhistory.preference_for = Student.objects.get(student_number=student_number)
+                prefhistory.save()
+
 
     # Find the preference
     try:

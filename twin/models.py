@@ -103,10 +103,23 @@ class Preference(models.Model):
     student = models.ForeignKey('Student')
     preference_for = models.ForeignKey('Student', related_name='preference_for', verbose_name='Heeft voorkeur voor')
 
-    def __str__(self):
-        return str(self.student) + ' heeft voorkeur voor ' + str(self.preference_for)
+    def __unicode__(self):
+        return u'{0} heeft voorkeur voor {1}'.format(self.student, self.preference_for)
 
     class Meta:
         verbose_name = "Voorkeur"
         verbose_name_plural = "Voorkeuren"
+        ordering = ["student"]
+
+class PreferenceHistory(models.Model):
+    student = models.ForeignKey('Student')
+    preference_for = models.ForeignKey('Student', related_name='preferencehistory_for', verbose_name='Heeft voorkeur voor')
+    date = models.DateTimeField(auto_now_add=True)
+
+    def __unicode__(self):
+        return u'{0} heeft/had voorkeur voor {1}'.format(self.student, self.preference_for)
+
+    class Meta:
+        verbose_name = "Voorkeur geschiedenis"
+        verbose_name_plural = "Voorkeuren geschiedenis"
         ordering = ["student"]
