@@ -116,19 +116,3 @@ def api_students(request):
     students = [make_json(student) for student in students]
 
     return HttpResponse(json.dumps(students), content_type='application/json')
-
-import random
-def debug_quickswitch(request, student_number):
-    student = Student.objects.get(student_number=student_number)
-    try:
-        user = User.objects.get(student=student)
-    except:
-        user = User()
-        user.username = student_number
-        user.student = student
-        user.is_student = True
-        user.save()
-
-    user = authenticate(username=user.username)
-    login(request, user)
-    return HttpResponseRedirect('/')

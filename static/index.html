@@ -18,13 +18,6 @@
 
 
     <header>
-
-      <!-- DEBUG -->
-      <div style="color: white; position: absolute">
-      Debug user switch: <select ng-model="debug_user" ng-options="student.name for student in students track by student.student_number"></select>
-      </div>
-      <!-- END DEBUG -->
-
       <div class="user" ng-if="user">{{user.student.name || user.username}} <span class="logout">(<a href="/logout">dit ben ik niet</a>)</span></div>
       <h1>TWIN</h1>
 
