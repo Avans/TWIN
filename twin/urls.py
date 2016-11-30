@@ -16,6 +16,6 @@ urlpatterns = [
     url(r'^api/students$', views.api_students),
     url(r'^oauth/callback$', avans.callback),
     url(r'^debug/quickswitch/(.+)$', views.debug_quickswitch),
-    #url(r'^admin/login/', avans.login),
+    url(r'^admin/login/', avans.login),
     url(r'^admin/', admin.site.urls),
 ] + static('/static', document_root='static')
