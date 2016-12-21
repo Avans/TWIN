@@ -201,11 +201,11 @@ class GoogleDriveTest(TestCase):
     def test_get_students(self):
         students = self.googledrive.get_students('1VSPpEuiSAfmAEhzpR11T6qRr6Dm32HWx3k9fW1hlSJw')
         self.assertEquals(
-            [{'sheet': 'IN01', 'student_number': 2097174, 'name': u'Jorrit Aärts'},
-             {'sheet': 'IN01', 'student_number': 2113371, 'name': 'Rob van den Akker'},
-             {'sheet': 'IN01', 'student_number': 2098472, 'name': 'Quirijn Akkermans'},
-             {'sheet': 'SWA13', 'student_number': 2077073, 'name': 'Bert Alderliesten'},
-             {'sheet': 'SWA13', 'student_number': 2079014, 'name': 'Mark Arnoldussen'}
+            [{'sheet': 'IN01', 'student_number': 2097174, 'name': u'Jorrit Aärts', 'email': 'gjrm.aarts@student.avans.nl'},
+             {'sheet': 'IN01', 'student_number': 2113371, 'name': 'Rob van den Akker', 'email': 'rma.vandenakker@student.avans.nl'},
+             {'sheet': 'IN01', 'student_number': 2098472, 'name': 'Quirijn Akkermans', 'email': 'qb.akkermans@student.avans.nl'},
+             {'sheet': 'SWA13', 'student_number': 2077073, 'name': 'Bert Alderliesten', 'email': ''},
+             {'sheet': 'SWA13', 'student_number': 2079014, 'name': 'Mark Arnoldussen', 'email': ''}
             ], students)
 
 class GetDifferenceTest(TestCase):

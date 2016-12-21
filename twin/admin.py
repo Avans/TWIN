@@ -65,6 +65,7 @@ class GoogleDrive(object):
                             firstname = row['values'][3].get('formattedValue') or ''
                             lastname_prefix = row['values'][2].get('formattedValue') or ''
                             lastname = row['values'][1].get('formattedValue') or ''
+                            email = row['values'][4].get('formattedValue') or ''
 
                             name = firstname
                             if lastname_prefix <> '':
@@ -77,7 +78,8 @@ class GoogleDrive(object):
                             student = {
                                 'student_number': int(studentnumber),
                                 'name': name,
-                                'sheet': sheet_title
+                                'sheet': sheet_title,
+                                'email': email
                             }
                             students.append(student)
                         except:
