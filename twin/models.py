@@ -70,6 +70,7 @@ or by the student by simply logging into the site.
 class Student(models.Model):
     student_number = models.IntegerField(primary_key=True, verbose_name="Studentnummer")
     name = models.CharField(max_length=200, verbose_name="Volledige naam")
+    email = models.CharField(max_length=200, verbose_name="E-mail", default="")
 
     def __str__(self):
         return self.name

@@ -3,7 +3,7 @@ from django.conf.urls import url
 from django.http import HttpResponse
 from django.shortcuts import render
 from .models import Student, Preference
-import settings, csv, StringIO, xlsxwriter, io, re, types
+import settings, csv, StringIO, xlsxwriter, io, re, types, json
 from constance import config
 
 # Load the Google API's
@@ -43,7 +43,7 @@ class GoogleDrive(object):
 
         like this:
         [{'title': <string: name for the term>, 'students': [
-                {'studentnumber': <int>, 'name': <string>},
+                {'studentnumber': <int>, 'name': <string>, 'email': <string>},
                 ...
              },
              ...
@@ -65,6 +65,7 @@ class GoogleDrive(object):
                             firstname = row['values'][3].get('formattedValue') or ''
                             lastname_prefix = row['values'][2].get('formattedValue') or ''
                             lastname = row['values'][1].get('formattedValue') or ''
+                            email = row['values'][4].get('formattedValue') or ''
 
                             name = firstname
                             if lastname_prefix <> '':
@@ -77,7 +78,8 @@ class GoogleDrive(object):
                             student = {
                                 'student_number': int(studentnumber),
                                 'name': name,
-                                'sheet': sheet_title
+                                'sheet': sheet_title,
+                                'email': email
                             }
                             students.append(student)
                         except:
@@ -128,8 +130,8 @@ def get_difference(all_students):
 
     returns a tuple like:
     [
-        {'change': 'insert', 'studentnumber': <int>, 'name': <string>, 'sheet': <string>},
-        {'change': 'update', 'studentnumber': <int>, 'name': <string>, 'sheet': <string>},
+        {'change': 'insert', 'studentnumber': <int>, 'name': <string>, 'sheet': <string>, 'email': <string>},
+        {'change': 'update', 'studentnumber': <int>, 'name': <string>, 'sheet': <string>, 'email': <string>},
         ...
     ],
     [
@@ -147,7 +149,7 @@ def get_difference(all_students):
         # Try to look up the student in twin_students
         for twin_student in twin_students:
             if twin_student.student_number == student['student_number']:
-                if twin_student.name == student['name']:
+                if twin_student.name == student['name'] and twin_student.email == student['email']:
                     student['change'] = 'nothing'
                 else:
                     student['change'] = 'update'
@@ -191,12 +193,13 @@ def student_import(request, spreadsheet_id):
     if request.method == "POST":
         for key in request.POST:
             if key.startswith('student-upsert-'):
-                print repr(request.POST[key])
-                student_number = int(key.replace('student-upsert-', ''))
+                student_data = json.loads(request.POST[key])
                 Student.objects.update_or_create(
-                    student_number=student_number,
-                    defaults={'name': request.POST[key]}
-                    )
+                    student_number=student_data['student_number'],
+                    defaults={
+                        'name': student_data['name'],
+                        'email': student_data['email'],
+                    })
 
             if key.startswith('student-delete-'):
                 student_number = int(key.replace('student-delete-', ''))
@@ -259,22 +262,22 @@ def array_excel_output(all_students, sheet):
     for pair in pairs:
         if pair.student.student_number in sheet_student_numbers \
             and pair.preference_for.student_number in sheet_student_numbers:
-            output.append(['{0}a'.format(pair_number), pair.student.student_number, pair.student.name, sheet, 'koppel'])
-            output.append(['{0}b'.format(pair_number), pair.preference_for.student_number, pair.preference_for.name, sheet, 'koppel'])
+            output.append(['{0}a'.format(pair_number), pair.student.student_number, pair.student.name, pair.student.email, sheet, 'koppel'])
+            output.append(['{0}b'.format(pair_number), pair.preference_for.student_number, pair.preference_for.name, pair.preference_for.email, sheet, 'koppel'])
             pair_number += 1
 
     # Then do all the mismatches
     for pair in pairs:
         if (pair.student.student_number in sheet_student_numbers) \
             ^ (pair.preference_for.student_number in sheet_student_numbers):
-            output.append(['{0}a'.format(pair_number), pair.student.student_number, pair.student.name, sheet_lookup[pair.student.student_number], 'mismatch'])
-            output.append(['{0}b'.format(pair_number), pair.preference_for.student_number, pair.preference_for.name, sheet_lookup[pair.preference_for.student_number], 'mismatch'])
+            output.append(['{0}a'.format(pair_number), pair.student.student_number, pair.student.name, student['email'], sheet_lookup[pair.student.student_number], 'mismatch'])
+            output.append(['{0}b'.format(pair_number), pair.preference_for.student_number, pair.preference_for.name, pair.preference_for.email, sheet_lookup[pair.preference_for.student_number], 'mismatch'])
             pair_number += 1
 
     # Then add all the singles
     for student in all_students:
         if student['sheet'] == sheet and student['student_number'] not in paired_student_numbers:
-            output.append([str(pair_number), student['student_number'], student['name'], sheet, 'single'])
+            output.append([str(pair_number), student['student_number'], student['name'], student['email'], sheet, 'single'])
             pair_number += 1
 
     return output
@@ -302,7 +305,8 @@ def make_groups(request, spreadsheet_id):
 
         worksheet.set_column(0, 0, 3)
         worksheet.set_column(2, 2, 30)
-        worksheet.set_column(3, 3, 14)
+        worksheet.set_column(3, 3, 40)
+        worksheet.set_column(4, 4, 14)
     workbook.close()
     output.seek(0)
 

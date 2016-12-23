@@ -3,9 +3,32 @@
 from django.test import TestCase, Client
 from .models import Student, User, Preference
 from .admin import GoogleDrive, get_difference, sort_by_sheet, get_pairs, array_excel_output
+from .avans import get_user
 import json
 
 client = Client()
+
+class LoginGetUserTest(TestCase):
+    def setUp(self):
+        self.bob = Student.objects.create(student_number=1, name='Bob van der Putten')
+        self.user = User.objects.create_user(username='bacputte', is_student=True, student=self.bob)
+
+    def test_normal_login(self):
+        user = get_user('bacputte', 'Bob van der Putten', 'bac.putten@avans.nl', True, 1)
+        self.assertEquals(user, self.user)
+        self.assertEquals(1, Student.objects.count())
+        self.assertEquals(1, User.objects.count())
+
+    def test_new_login(self):
+        user = get_user('pwagener', 'Paul Wagener', 'p.wagener@avans.nl', True, 2)
+        self.assertNotEqual(user, self.user)
+        self.assertIsNotNone(user.student)
+        self.assertEquals(2, user.student.student_number)
+        self.assertEquals('Paul Wagener', user.student.name)
+        self.assertEquals('p.wagener@avans.nl', user.student.email)
+        self.assertEquals(2, Student.objects.count())
+        self.assertEquals(2, User.objects.count())
+
 
 """
 Tests the /api/students list that should return a list of all the students
@@ -201,11 +224,11 @@ class GoogleDriveTest(TestCase):
     def test_get_students(self):
         students = self.googledrive.get_students('1VSPpEuiSAfmAEhzpR11T6qRr6Dm32HWx3k9fW1hlSJw')
         self.assertEquals(
-            [{'sheet': 'IN01', 'student_number': 2097174, 'name': u'Jorrit Aärts'},
-             {'sheet': 'IN01', 'student_number': 2113371, 'name': 'Rob van den Akker'},
-             {'sheet': 'IN01', 'student_number': 2098472, 'name': 'Quirijn Akkermans'},
-             {'sheet': 'SWA13', 'student_number': 2077073, 'name': 'Bert Alderliesten'},
-             {'sheet': 'SWA13', 'student_number': 2079014, 'name': 'Mark Arnoldussen'}
+            [{'sheet': 'IN01', 'student_number': 2097174, 'name': u'Jorrit Aärts', 'email': 'gjrm.aarts@student.avans.nl'},
+             {'sheet': 'IN01', 'student_number': 2113371, 'name': 'Rob van den Akker', 'email': 'rma.vandenakker@student.avans.nl'},
+             {'sheet': 'IN01', 'student_number': 2098472, 'name': 'Quirijn Akkermans', 'email': 'qb.akkermans@student.avans.nl'},
+             {'sheet': 'SWA13', 'student_number': 2077073, 'name': 'Bert Alderliesten', 'email': ''},
+             {'sheet': 'SWA13', 'student_number': 2079014, 'name': 'Mark Arnoldussen', 'email': ''}
             ], students)
 
 class GetDifferenceTest(TestCase):
@@ -213,23 +236,54 @@ class GetDifferenceTest(TestCase):
     def setUp(self):
         Student.objects.create(student_number=1, name='Paul Wagener')
         Student.objects.create(student_number=2, name='Bart Gelens')
-        Student.objects.create(student_number=4, name='Bob van der Putten')
+        Student.objects.create(student_number=4, name='Bob van der Putten', email='bob@avans.nl')
 
-    def test_get_difference(self):
+        self.students = [
+            {'student_number': 1, 'name': 'Paul Wagener', 'sheet': 'IN01', 'email': ''},
+            {'student_number': 2, 'name': 'Bart Gelens', 'sheet': 'IN02', 'email': ''},
+            {'student_number': 4, 'name': 'Bob van der Putten', 'sheet': 'IN03', 'email': 'bob@avans.nl'},
+        ]
 
-        changed, deleted = get_difference([
-            {'student_number': 1, 'name': 'Paul Blapener', 'sheet': 'IN01'},
-            {'student_number': 2, 'name': 'Bart Gelens', 'sheet': 'IN02'},
-            {'student_number': 3, 'name': 'Stijn Smulders', 'sheet': 'IN03'},
-        ])
+    def test_no_change(self):
+        changed, deleted = get_difference(self.students)
+        self.assertEquals([], changed)
+        self.assertEquals([], deleted)
 
-        self.assertEquals([
-            {'student_number': 1, 'name': 'Paul Blapener', 'sheet': 'IN01', 'change': 'update'},
-            {'student_number': 3, 'name': 'Stijn Smulders', 'sheet': 'IN03', 'change': 'insert'},
-        ], changed)
+    def test_change_name(self):
+        self.students[0]['name'] = 'Paul Blapener'
+        changed, deleted = get_difference(self.students)
 
-        self.assertEquals([{'student_number': 4, 'name': 'Bob van der Putten'}],
-            deleted)
+        self.assertEquals([{
+            'student_number': 1,
+            'name': 'Paul Blapener',
+            'sheet': 'IN01',
+            'change': 'update',
+            'email': '',
+            }], changed)
+        self.assertEquals([], deleted)
+
+    def test_add_email(self):
+        self.students[0]['email'] = 'p.wagener@avans.nl'
+        changed, deleted = get_difference(self.students)
+
+        self.assertEquals([{
+            'student_number': 1,
+            'name': 'Paul Wagener',
+            'sheet': 'IN01',
+            'change': 'update',
+            'email': 'p.wagener@avans.nl',
+            }], changed)
+        self.assertEquals([], deleted)
+
+    def test_delete(self):
+        del self.students[2] # Bob
+        changed, deleted = get_difference(self.students)
+
+        self.assertEquals([], changed)
+        self.assertEquals([{
+            'student_number': 4,
+            'name': 'Bob van der Putten'
+            }], deleted)
 
 
 class SortBySheetTest(TestCase):
@@ -291,7 +345,7 @@ class GetPairsTest(TestCase):
 class ArrayExcelOutputTest(TestCase):
 
     def setUp(self):
-        s1 = Student.objects.create(student_number=1, name='Paul Wagener')
+        s1 = Student.objects.create(student_number=1, name='Paul Wagener', email='p.wagener@avans.nl')
         s2 = Student.objects.create(student_number=2, name='Bart Gelens')
         s3 = Student.objects.create(student_number=3, name='Reinier Dickhout')
         s4 = Student.objects.create(student_number=4, name='Bob van der Putten')
@@ -303,12 +357,12 @@ class ArrayExcelOutputTest(TestCase):
         self.p2b = Preference.objects.create(student=s4, preference_for=s3)
 
         self.students = [
-            {'student_number': 1, 'name': 'Paul Wagener', 'sheet': 'IN01'},
-            {'student_number': 2, 'name': 'Bart Gelens', 'sheet': 'IN01'},
-            {'student_number': 3, 'name': 'Reinier Dickhout', 'sheet': 'IN01'},
-            {'student_number': 4, 'name': 'Bob van der Putten', 'sheet': 'SWA13'},
-            {'student_number': 5, 'name': 'Stijn Smulders', 'sheet': 'IN01'},
-            {'student_number': 6, 'name': 'Andre Gehring', 'sheet': 'Zwervers'}
+            {'student_number': 1, 'name': 'Paul Wagener', 'email': 'p.wagener@avans.nl', 'sheet': 'IN01'},
+            {'student_number': 2, 'name': 'Bart Gelens', 'email': '', 'sheet': 'IN01'},
+            {'student_number': 3, 'name': 'Reinier Dickhout', 'email': '', 'sheet': 'IN01'},
+            {'student_number': 4, 'name': 'Bob van der Putten', 'email': '', 'sheet': 'SWA13'},
+            {'student_number': 5, 'name': 'Stijn Smulders', 'email': '', 'sheet': 'IN01'},
+            {'student_number': 6, 'name': 'Andre Gehring', 'email': '', 'sheet': 'Zwervers'}
         ]
 
         # Students not in sheet, but in database
@@ -323,18 +377,18 @@ class ArrayExcelOutputTest(TestCase):
 
         self.assertEquals(
             [
-                ['1a', 1, 'Paul Wagener',       'IN01', 'koppel'],
-                ['1b', 2, 'Bart Gelens',        'IN01', 'koppel'],
-                ['2a', 3, 'Reinier Dickhout',   'IN01', 'mismatch'],
-                ['2b', 4, 'Bob van der Putten', 'SWA13', 'mismatch'],
-                ['3',  5, 'Stijn Smulders',      'IN01', 'single']
+                ['1a', 1, 'Paul Wagener',       'p.wagener@avans.nl', 'IN01', 'koppel'],
+                ['1b', 2, 'Bart Gelens',        '',                   'IN01', 'koppel'],
+                ['2a', 3, 'Reinier Dickhout',   '',                   'IN01', 'mismatch'],
+                ['2b', 4, 'Bob van der Putten', '',                   'SWA13', 'mismatch'],
+                ['3',  5, 'Stijn Smulders',     '',                   'IN01', 'single']
             ], output)
 
     def test_just_mismatch(self):
         output = array_excel_output(self.students, 'SWA13')
         self.assertEquals(
             [
-                ['1a', 3, 'Reinier Dickhout',   'IN01', 'mismatch'],
-                ['1b', 4, 'Bob van der Putten', 'SWA13', 'mismatch'],
+                ['1a', 3, 'Reinier Dickhout',   '', 'IN01', 'mismatch'],
+                ['1b', 4, 'Bob van der Putten', '', 'SWA13', 'mismatch'],
             ], output)
 

@@ -42,13 +42,13 @@ ul .icon {
 <ul>
   {% for student in sheet.students %}
     <li>
-      <input type="checkbox" name="student-upsert-{{ student.student_number }}" value="{{ student.name }}">
+      <input type="checkbox" name="student-upsert-{{ student.student_number }}" value="{&quot;student_number&quot;: {{ student.student_number|escapejs }}, &quot;name&quot;: &quot;{{ student.name|escapejs }}&quot;, &quot;email&quot;: &quot;{{ student.email|escapejs }}&quot; }">
       {% if student.change == 'update' %}
         <img src="/static/img/update.png" class="icon">
       {% elif student.change == 'insert' %}
         <img src="/static/img/insert.png" class="icon">
       {% endif %}
-        {{student.name}}
+      {{student.name}}
     </li>
   {% empty %}
     Geen wijzigingen...
