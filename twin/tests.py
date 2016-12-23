@@ -3,9 +3,32 @@
 from django.test import TestCase, Client
 from .models import Student, User, Preference
 from .admin import GoogleDrive, get_difference, sort_by_sheet, get_pairs, array_excel_output
+from .avans import get_user
 import json
 
 client = Client()
+
+class LoginGetUserTest(TestCase):
+    def setUp(self):
+        self.bob = Student.objects.create(student_number=1, name='Bob van der Putten')
+        self.user = User.objects.create_user(username='bacputte', is_student=True, student=self.bob)
+
+    def test_normal_login(self):
+        user = get_user('bacputte', 'Bob van der Putten', 'bac.putten@avans.nl', True, 1)
+        self.assertEquals(user, self.user)
+        self.assertEquals(1, Student.objects.count())
+        self.assertEquals(1, User.objects.count())
+
+    def test_new_login(self):
+        user = get_user('pwagener', 'Paul Wagener', 'p.wagener@avans.nl', True, 2)
+        self.assertNotEqual(user, self.user)
+        self.assertIsNotNone(user.student)
+        self.assertEquals(2, user.student.student_number)
+        self.assertEquals('Paul Wagener', user.student.name)
+        self.assertEquals('p.wagener@avans.nl', user.student.email)
+        self.assertEquals(2, Student.objects.count())
+        self.assertEquals(2, User.objects.count())
+
 
 """
 Tests the /api/students list that should return a list of all the students

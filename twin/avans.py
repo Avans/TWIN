@@ -43,16 +43,25 @@ def callback(request):
     resp, content = client.request('https://publicapi.avans.nl/oauth/people/@me', 'GET')
     data = json.loads(content)
     is_student = data['employee'] <> 'true'
-    first_name = data['name']['givenName']
-    last_name = data['name']['familyName']
+    name = data['name']['formatted']
+    email = data['emails'][0]
 
     # Get the username and student number
     resp, content = client.request('https://publicapi.avans.nl/oauth/studentnummer/', 'GET')
     data = json.loads(content)[0]
-
     username = data['inlognaam'].lower()
     student_number = int(data['studentnummer'])
 
+    user = get_user(username, name, email, is_student, student_number)
+
+    # Log the user in
+    user = authenticate(username=username)
+    django_login(request, user)
+
+    # Redirect to the main site
+    return HttpResponseRedirect('/')
+
+def get_user(username, name, email, is_student, student_number):
     # Create or retrieve the corresponding user entry
     try:
         user = User.objects.get(username=username)
@@ -64,14 +73,9 @@ def callback(request):
     # Create a new Student entry if it is not yet preloaded into the database
     if student_number > 0 and user.student == None:
         student, created = Student.objects.get_or_create(student_number=student_number,
-                                                defaults={'first_name': first_name,
-                                                          'last_name': last_name})
+                                                defaults={'name': name,
+                                                          'email': email})
         user.student = student
         user.save()
 
-    # Log the user in
-    user = authenticate(username=username)
-    django_login(request, user)
-
-    # Redirect to the main site
-    return HttpResponseRedirect('/')
+    return user
