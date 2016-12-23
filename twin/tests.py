@@ -322,7 +322,7 @@ class GetPairsTest(TestCase):
 class ArrayExcelOutputTest(TestCase):
 
     def setUp(self):
-        s1 = Student.objects.create(student_number=1, name='Paul Wagener')
+        s1 = Student.objects.create(student_number=1, name='Paul Wagener', email='p.wagener@avans.nl')
         s2 = Student.objects.create(student_number=2, name='Bart Gelens')
         s3 = Student.objects.create(student_number=3, name='Reinier Dickhout')
         s4 = Student.objects.create(student_number=4, name='Bob van der Putten')
@@ -334,12 +334,12 @@ class ArrayExcelOutputTest(TestCase):
         self.p2b = Preference.objects.create(student=s4, preference_for=s3)
 
         self.students = [
-            {'student_number': 1, 'name': 'Paul Wagener', 'sheet': 'IN01'},
-            {'student_number': 2, 'name': 'Bart Gelens', 'sheet': 'IN01'},
-            {'student_number': 3, 'name': 'Reinier Dickhout', 'sheet': 'IN01'},
-            {'student_number': 4, 'name': 'Bob van der Putten', 'sheet': 'SWA13'},
-            {'student_number': 5, 'name': 'Stijn Smulders', 'sheet': 'IN01'},
-            {'student_number': 6, 'name': 'Andre Gehring', 'sheet': 'Zwervers'}
+            {'student_number': 1, 'name': 'Paul Wagener', 'email': 'p.wagener@avans.nl', 'sheet': 'IN01'},
+            {'student_number': 2, 'name': 'Bart Gelens', 'email': '', 'sheet': 'IN01'},
+            {'student_number': 3, 'name': 'Reinier Dickhout', 'email': '', 'sheet': 'IN01'},
+            {'student_number': 4, 'name': 'Bob van der Putten', 'email': '', 'sheet': 'SWA13'},
+            {'student_number': 5, 'name': 'Stijn Smulders', 'email': '', 'sheet': 'IN01'},
+            {'student_number': 6, 'name': 'Andre Gehring', 'email': '', 'sheet': 'Zwervers'}
         ]
 
         # Students not in sheet, but in database
@@ -354,18 +354,18 @@ class ArrayExcelOutputTest(TestCase):
 
         self.assertEquals(
             [
-                ['1a', 1, 'Paul Wagener',       'IN01', 'koppel'],
-                ['1b', 2, 'Bart Gelens',        'IN01', 'koppel'],
-                ['2a', 3, 'Reinier Dickhout',   'IN01', 'mismatch'],
-                ['2b', 4, 'Bob van der Putten', 'SWA13', 'mismatch'],
-                ['3',  5, 'Stijn Smulders',      'IN01', 'single']
+                ['1a', 1, 'Paul Wagener',       'p.wagener@avans.nl', 'IN01', 'koppel'],
+                ['1b', 2, 'Bart Gelens',        '',                   'IN01', 'koppel'],
+                ['2a', 3, 'Reinier Dickhout',   '',                   'IN01', 'mismatch'],
+                ['2b', 4, 'Bob van der Putten', '',                   'SWA13', 'mismatch'],
+                ['3',  5, 'Stijn Smulders',     '',                   'IN01', 'single']
             ], output)
 
     def test_just_mismatch(self):
         output = array_excel_output(self.students, 'SWA13')
         self.assertEquals(
             [
-                ['1a', 3, 'Reinier Dickhout',   'IN01', 'mismatch'],
-                ['1b', 4, 'Bob van der Putten', 'SWA13', 'mismatch'],
+                ['1a', 3, 'Reinier Dickhout',   '', 'IN01', 'mismatch'],
+                ['1b', 4, 'Bob van der Putten', '', 'SWA13', 'mismatch'],
             ], output)
 

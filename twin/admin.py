@@ -262,22 +262,22 @@ def array_excel_output(all_students, sheet):
     for pair in pairs:
         if pair.student.student_number in sheet_student_numbers \
             and pair.preference_for.student_number in sheet_student_numbers:
-            output.append(['{0}a'.format(pair_number), pair.student.student_number, pair.student.name, sheet, 'koppel'])
-            output.append(['{0}b'.format(pair_number), pair.preference_for.student_number, pair.preference_for.name, sheet, 'koppel'])
+            output.append(['{0}a'.format(pair_number), pair.student.student_number, pair.student.name, pair.student.email, sheet, 'koppel'])
+            output.append(['{0}b'.format(pair_number), pair.preference_for.student_number, pair.preference_for.name, pair.preference_for.email, sheet, 'koppel'])
             pair_number += 1
 
     # Then do all the mismatches
     for pair in pairs:
         if (pair.student.student_number in sheet_student_numbers) \
             ^ (pair.preference_for.student_number in sheet_student_numbers):
-            output.append(['{0}a'.format(pair_number), pair.student.student_number, pair.student.name, sheet_lookup[pair.student.student_number], 'mismatch'])
-            output.append(['{0}b'.format(pair_number), pair.preference_for.student_number, pair.preference_for.name, sheet_lookup[pair.preference_for.student_number], 'mismatch'])
+            output.append(['{0}a'.format(pair_number), pair.student.student_number, pair.student.name, student['email'], sheet_lookup[pair.student.student_number], 'mismatch'])
+            output.append(['{0}b'.format(pair_number), pair.preference_for.student_number, pair.preference_for.name, pair.preference_for.email, sheet_lookup[pair.preference_for.student_number], 'mismatch'])
             pair_number += 1
 
     # Then add all the singles
     for student in all_students:
         if student['sheet'] == sheet and student['student_number'] not in paired_student_numbers:
-            output.append([str(pair_number), student['student_number'], student['name'], sheet, 'single'])
+            output.append([str(pair_number), student['student_number'], student['name'], student['email'], sheet, 'single'])
             pair_number += 1
 
     return output
@@ -305,7 +305,8 @@ def make_groups(request, spreadsheet_id):
 
         worksheet.set_column(0, 0, 3)
         worksheet.set_column(2, 2, 30)
-        worksheet.set_column(3, 3, 14)
+        worksheet.set_column(3, 3, 40)
+        worksheet.set_column(4, 4, 14)
     workbook.close()
     output.seek(0)
 
