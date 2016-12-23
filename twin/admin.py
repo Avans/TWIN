@@ -3,7 +3,7 @@ from django.conf.urls import url
 from django.http import HttpResponse
 from django.shortcuts import render
 from .models import Student, Preference
-import settings, csv, StringIO, xlsxwriter, io, re, types
+import settings, csv, StringIO, xlsxwriter, io, re, types, json
 from constance import config
 
 # Load the Google API's
@@ -193,12 +193,13 @@ def student_import(request, spreadsheet_id):
     if request.method == "POST":
         for key in request.POST:
             if key.startswith('student-upsert-'):
-                print repr(request.POST[key])
-                student_number = int(key.replace('student-upsert-', ''))
+                student_data = json.loads(request.POST[key])
                 Student.objects.update_or_create(
-                    student_number=student_number,
-                    defaults={'name': request.POST[key]}
-                    )
+                    student_number=student_data['student_number'],
+                    defaults={
+                        'name': student_data['name'],
+                        'email': student_data['email'],
+                    })
 
             if key.startswith('student-delete-'):
                 student_number = int(key.replace('student-delete-', ''))
