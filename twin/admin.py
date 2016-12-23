@@ -43,7 +43,7 @@ class GoogleDrive(object):
 
         like this:
         [{'title': <string: name for the term>, 'students': [
-                {'studentnumber': <int>, 'name': <string>},
+                {'studentnumber': <int>, 'name': <string>, 'email': <string>},
                 ...
              },
              ...
