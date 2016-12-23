@@ -130,8 +130,8 @@ def get_difference(all_students):
 
     returns a tuple like:
     [
-        {'change': 'insert', 'studentnumber': <int>, 'name': <string>, 'sheet': <string>},
-        {'change': 'update', 'studentnumber': <int>, 'name': <string>, 'sheet': <string>},
+        {'change': 'insert', 'studentnumber': <int>, 'name': <string>, 'sheet': <string>, 'email': <string>},
+        {'change': 'update', 'studentnumber': <int>, 'name': <string>, 'sheet': <string>, 'email': <string>},
         ...
     ],
     [
@@ -149,7 +149,7 @@ def get_difference(all_students):
         # Try to look up the student in twin_students
         for twin_student in twin_students:
             if twin_student.student_number == student['student_number']:
-                if twin_student.name == student['name']:
+                if twin_student.name == student['name'] and twin_student.email == student['email']:
                     student['change'] = 'nothing'
                 else:
                     student['change'] = 'update'

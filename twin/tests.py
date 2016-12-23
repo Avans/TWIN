@@ -213,23 +213,54 @@ class GetDifferenceTest(TestCase):
     def setUp(self):
         Student.objects.create(student_number=1, name='Paul Wagener')
         Student.objects.create(student_number=2, name='Bart Gelens')
-        Student.objects.create(student_number=4, name='Bob van der Putten')
+        Student.objects.create(student_number=4, name='Bob van der Putten', email='bob@avans.nl')
 
-    def test_get_difference(self):
+        self.students = [
+            {'student_number': 1, 'name': 'Paul Wagener', 'sheet': 'IN01', 'email': ''},
+            {'student_number': 2, 'name': 'Bart Gelens', 'sheet': 'IN02', 'email': ''},
+            {'student_number': 4, 'name': 'Bob van der Putten', 'sheet': 'IN03', 'email': 'bob@avans.nl'},
+        ]
 
-        changed, deleted = get_difference([
-            {'student_number': 1, 'name': 'Paul Blapener', 'sheet': 'IN01'},
-            {'student_number': 2, 'name': 'Bart Gelens', 'sheet': 'IN02'},
-            {'student_number': 3, 'name': 'Stijn Smulders', 'sheet': 'IN03'},
-        ])
+    def test_no_change(self):
+        changed, deleted = get_difference(self.students)
+        self.assertEquals([], changed)
+        self.assertEquals([], deleted)
 
-        self.assertEquals([
-            {'student_number': 1, 'name': 'Paul Blapener', 'sheet': 'IN01', 'change': 'update'},
-            {'student_number': 3, 'name': 'Stijn Smulders', 'sheet': 'IN03', 'change': 'insert'},
-        ], changed)
+    def test_change_name(self):
+        self.students[0]['name'] = 'Paul Blapener'
+        changed, deleted = get_difference(self.students)
 
-        self.assertEquals([{'student_number': 4, 'name': 'Bob van der Putten'}],
-            deleted)
+        self.assertEquals([{
+            'student_number': 1,
+            'name': 'Paul Blapener',
+            'sheet': 'IN01',
+            'change': 'update',
+            'email': '',
+            }], changed)
+        self.assertEquals([], deleted)
+
+    def test_add_email(self):
+        self.students[0]['email'] = 'p.wagener@avans.nl'
+        changed, deleted = get_difference(self.students)
+
+        self.assertEquals([{
+            'student_number': 1,
+            'name': 'Paul Wagener',
+            'sheet': 'IN01',
+            'change': 'update',
+            'email': 'p.wagener@avans.nl',
+            }], changed)
+        self.assertEquals([], deleted)
+
+    def test_delete(self):
+        del self.students[2] # Bob
+        changed, deleted = get_difference(self.students)
+
+        self.assertEquals([], changed)
+        self.assertEquals([{
+            'student_number': 4,
+            'name': 'Bob van der Putten'
+            }], deleted)
 
 
 class SortBySheetTest(TestCase):
